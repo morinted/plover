@@ -281,9 +281,7 @@ class Helper(object):
         # Note: '--always-unzip' is needed, as pyHook cannot work from a single egg file.
         ('pyhook'           , 'http://downloads.sourceforge.net/project/pyhook/pyhook/1.5.1/pyHook-1.5.1.win32-py2.7.exe'                         , '9afb7a5b2858a69c6b0f6d2cb1b2eb2a3f4183d2', 'easy_install', ('--always-unzip',), None),
         ('pywin32'          , 'http://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win32-py2.7.exe'                    , '8bc39008383c646bed01942584117113ddaefe6b', 'easy_install', (), None),
-        ('appdirs'          , 'pip:appdirs'                                                                                                       , None                                      , None, (), None),
         ('mock'             , 'pip:mock'                                                                                                          , None                                      , None, (), None),
-        ('pyserial'         , 'pip:pyserial'                                                                                                      , None                                      , None, (), None),
         ('pywinusb'         , 'pip:pywinusb'                                                                                                      , None                                      , None, (), None),
         ('PyInstaller'      , 'pip:PyInstaller==3.1.1'                                                                                            , None                                      , None, (), None),
         ('PyTest'           , 'pip:pytest'                                                                                                        , None                                      , None, (), None),
@@ -526,6 +524,8 @@ class Helper(object):
         self._env.setup()
         for name, src, checksum, handler_format, handler_args, path_dir in self.DEPENDENCIES:
             self.install(name, src, checksum, handler_format=handler_format, handler_args=handler_args, path_dir=path_dir)
+        info('setup develop')
+        self._env.run(('python.exe', 'setup.py', 'develop', '--upgrade'))
 
     def cmd_run(self, executable, *args):
         '''run command in environment
