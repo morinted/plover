@@ -13,7 +13,7 @@ deploy:
   description: Weekly Pre-release
   prerelease: true
   auth_token:
-    secure: m8kBg3jFX2k516nlmWkvxNCrBwlQZMaa6hNn7A+rktl781BRTyKssCXQqKAwPJLs
+    secure: XgzNSlliEiPTwXeKFbzHgad3JQHjjDzK4yDGXX8zcB82O3Dp+/UNLogZ3Q1ugoSo
   artifact: executable
   on:
     branch: weekly
