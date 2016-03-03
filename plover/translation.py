@@ -88,7 +88,7 @@ class Translation(object):
         if not self.formatting:
             return True
         for a in self.formatting:
-            if a.text or a.replace:
+            if a.text or a.replace or a.undo_combo:
                 return True
         return False
 

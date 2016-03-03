@@ -163,6 +163,8 @@ class OutputHelper(object):
                     self.before = self.before[:-len(a.replace)]
             if a.text:
                 self.before += a.text
+            if a.undo_combo:
+                self.before += len(a.combo.split()) * SPACE
 
         self.after = self.before
 
@@ -171,6 +173,8 @@ class OutputHelper(object):
                 self.after = self.after[:-len(a.text)]
             if a.replace:
                 self.after += a.replace
+            if a.undo_combo:
+                self.after = ''
 
         for a in do:
             if a.replace:
@@ -206,7 +210,7 @@ class _Action(object):
                  lower=False, orthography=True, space_char=' ',
                  upper=False, upper_carry=False,
                  case=CASE_NONE, text='', replace='', combo='',
-                 command=''):
+                 undo_combo=False, command=''):
         """Initialize a new action.
 
         Arguments:
@@ -264,6 +268,7 @@ class _Action(object):
         self.text = text
         self.replace = replace
         self.combo = combo
+        self.undo_combo = undo_combo
         self.command = command
 
     def copy_state(self):
@@ -374,6 +379,7 @@ META_RETRO_FORMAT = '*('
 META_GLUE_FLAG = '&'
 META_ATTACH_FLAG = '^'
 META_KEY_COMBINATION = '#'
+META_KEY_COMBINATION_UNDO = META_KEY_COMBINATION + '#'
 META_COMMAND = 'PLOVER:'
 META_MODE = 'MODE:'
 MODE_CAPS = 'CAPS'
@@ -566,8 +572,7 @@ def _atom_to_action_spaces_before(atom, last_action):
             action.word = _rightmost_word(
                 last_word[:len(last_word)-len(action.replace)] + action.text)
         elif meta.startswith(META_KEY_COMBINATION):
-            action = last_action.copy_state()
-            action.combo = meta[len(META_KEY_COMBINATION):]
+            action = _apply_combo(meta, last_action)
     else:
         text = _unescape_atom(atom)
         if last_capitalize:
@@ -752,8 +757,7 @@ def _atom_to_action_spaces_after(atom, last_action):
             if end and not begin and last_space == SPACE:
                 action.word = _rightmost_word(meta)
         elif meta.startswith(META_KEY_COMBINATION):
-            action = last_action.copy_state()
-            action.combo = meta[len(META_KEY_COMBINATION):]
+            action = _apply_combo(meta, last_action)
     else:
         text = _unescape_atom(atom)
         if last_capitalize:
@@ -772,6 +776,16 @@ def _atom_to_action_spaces_after(atom, last_action):
                               last_capitalize, last_upper, last_lower)
     return action
 
+
+def _apply_combo(meta, last_action):
+    action = last_action.copy_state()
+    if meta.startswith(META_KEY_COMBINATION_UNDO):
+        action.undo_combo = True
+        prefix = META_KEY_COMBINATION_UNDO
+    else:
+        prefix = META_KEY_COMBINATION
+    action.combo = meta[len(prefix):]
+    return action
 
 def _apply_mode(text, case, space_char, begin, last_attach,
                 last_glue, last_capitalize, last_upper, last_lower):
