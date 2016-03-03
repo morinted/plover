@@ -8,6 +8,7 @@ A steno dictionary maps sequences of steno strokes to translations.
 """
 
 import collections
+from os.path import basename
 
 class StenoDictionary(collections.MutableMapping):
     """A steno dictionary.
@@ -30,6 +31,7 @@ class StenoDictionary(collections.MutableMapping):
         self.update(*args, **kw)
         self.save = None
         self._path = ''
+        self.name = ''
 
     @property
     def longest_key(self):
@@ -77,7 +79,8 @@ class StenoDictionary(collections.MutableMapping):
         return True
 
     def set_path(self, path):
-        self._path = path    
+        self._path = path
+        self.name = basename(path)
 
     def get_path(self):
         return self._path    
@@ -146,22 +149,28 @@ class StenoDictionaryCollection(object):
                 return value
 
     def raw_lookup(self, key):
+        results = []
         for d in self.dicts:
             value = d.get(key, None)
             if value:
-                return value
+                results.append("{0} ({1})".format(value, d.name))
+        return ', '.join(results)
 
     def reverse_lookup(self, value):
+        results = set()
         for d in self.dicts:
             key = d.reverse.get(value, None)
             if key:
-                return key
+                results |= set(key)
+        return list(results)
 
     def casereverse_lookup(self, value):
+        results = set()
         for d in self.dicts:
             key = d.casereverse.get(value, None)
             if key:
-                return key
+                results |= key
+        return results
 
     def set(self, key, value):
         if self.dicts:
