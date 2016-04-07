@@ -344,7 +344,7 @@ if __name__ == '__main__':
             'setuptools.installation': ['eggsecutable=plover.main:main'],
         },
         packages=[
-            'plover', 'plover.machine', 'plover.gui',
+            'plover', 'plover.machine', 'plover.gui_wx',
             'plover.oslayer', 'plover.dictionary',
             'plover.system',
         ],

@@ -1,12 +1,14 @@
 import wx
 from wx.lib.utils import AdjustRectToScreen
-import plover.gui.util as util
-from plover.dictionary_editor_store import DictionaryEditorStore
-from plover.dictionary_editor_store import COLUMNS
-from plover.dictionary_editor_store import COL_STROKE
-from plover.dictionary_editor_store import COL_TRANSLATION
-from plover.dictionary_editor_store import COL_DICTIONARY
-from plover.dictionary_editor_store import COL_SPACER
+import plover.gui_wx.util as util
+from plover.gui_wx.dictionary_editor_store import (
+    DictionaryEditorStore,
+    COLUMNS,
+    COL_STROKE,
+    COL_TRANSLATION,
+    COL_DICTIONARY,
+    COL_SPACER,
+)
 from wx.grid import EVT_GRID_LABEL_LEFT_CLICK, EVT_GRID_SELECT_CELL, EVT_GRID_RANGE_SELECT
 from wx.grid import PyGridTableBase
 

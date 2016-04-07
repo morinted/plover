@@ -6,7 +6,7 @@
 import wx
 import re
 from wx.lib.utils import AdjustRectToScreen
-from plover.gui.util import find_fixed_width_font, shorten_unicode
+from plover.gui_wx.util import find_fixed_width_font, shorten_unicode
 from plover import system
 from plover.suggestions import Suggestion
 from plover.translation import escape_translation

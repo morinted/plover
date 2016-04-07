@@ -5,7 +5,7 @@ import wx
 from wx.lib.utils import AdjustRectToScreen
 
 from plover.steno import normalize_steno
-import plover.gui.util as util
+from plover.gui_wx import util
 from plover.translation import escape_translation, unescape_translation
 
 TITLE = 'Plover: Lookup'

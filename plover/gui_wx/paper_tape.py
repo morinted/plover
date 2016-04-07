@@ -8,7 +8,7 @@ import time
 from wx.lib.utils import AdjustRectToScreen
 from collections import deque
 from plover import system
-from plover.gui.util import find_fixed_width_font
+from plover.gui_wx.util import find_fixed_width_font
 from plover import log
 
 TITLE = 'Plover: Stroke Display'

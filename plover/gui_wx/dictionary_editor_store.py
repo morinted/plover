@@ -1,5 +1,5 @@
 from plover.steno import normalize_steno
-from plover.gui.util import shorten_unicode
+from plover.gui_wx.util import shorten_unicode
 from plover.translation import escape_translation, unescape_translation
 
 STROKE = "STROKE"

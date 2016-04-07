@@ -12,17 +12,17 @@ from collections import namedtuple
 import wx.lib.filebrowsebutton as filebrowse
 from wx.lib.scrolledpanel import ScrolledPanel
 import plover.config as conf
-from plover.gui.serial_config import SerialConfigDialog
-import plover.gui.add_translation
-import plover.gui.lookup
-import plover.gui.dictionary_editor
+from plover.gui_wx.serial_config import SerialConfigDialog
+import plover.gui_wx.add_translation
+import plover.gui_wx.lookup
+import plover.gui_wx.dictionary_editor
 from plover import log
 from plover.app import update_engine
 from plover.machine.registry import machine_registry
 from plover.dictionary.loading_manager import manager as dict_manager
-from plover.gui.paper_tape import StrokeDisplayDialog
-from plover.gui.suggestions import SuggestionsDisplayDialog
-from plover.gui.keyboard_config import KeyboardConfigDialog
+from plover.gui_wx.paper_tape import StrokeDisplayDialog
+from plover.gui_wx.suggestions import SuggestionsDisplayDialog
+from plover.gui_wx.keyboard_config import KeyboardConfigDialog
 from plover.misc import SimpleNamespace
 
 
@@ -334,13 +334,13 @@ class DictionaryConfig(ScrolledPanel):
         self.config.set_dictionary_file_names(filenames)
 
     def show_add_translation(self, event):
-        plover.gui.add_translation.Show(self, self.engine, self.config)
+        plover.gui_wx.add_translation.Show(self, self.engine, self.config)
 
     def show_lookup(self, event):
-        plover.gui.lookup.Show(self, self.engine, self.config)
+        plover.gui_wx.lookup.Show(self, self.engine, self.config)
 
     def show_edit(self, event):
-        plover.gui.dictionary_editor.Show(self, self.engine, self.config)
+        plover.gui_wx.dictionary_editor.Show(self, self.engine, self.config)
 
     def add_dictionary(self, event):
         dlg = wx.FileDialog(self, "Choose a file", os.getcwd(), "", self.mask,

@@ -4,24 +4,14 @@
 
 "Launch the plover application."
 
-# Python 2/3 compatibility.
-from __future__ import print_function
-
 import os
 import sys
 import traceback
 import argparse
 
-WXVER = '3.0'
-if not hasattr(sys, 'frozen'):
-    import wxversion
-    wxversion.ensureMinimal(WXVER)
-
 if sys.platform.startswith('darwin'):
     import appnope
-import wx
 
-import plover.gui.main
 import plover.oslayer.processlock
 from plover.oslayer.config import CONFIG_DIR, ASSETS_DIR
 from plover.config import CONFIG_FILE, Config
@@ -29,19 +19,6 @@ from plover import log
 from plover import __name__ as __software_name__
 from plover import __version__
 
-def show_error(title, message):
-    """Report error to the user.
-
-    This shows a graphical error and prints the same to the terminal.
-    """
-    print(message)
-    app = wx.App()
-    alert_dialog = wx.MessageDialog(None,
-                                    message,
-                                    title,
-                                    wx.OK | wx.ICON_INFORMATION)
-    alert_dialog.ShowModal()
-    alert_dialog.Destroy()
 
 def init_config_dir():
     """Creates plover's config dir.
@@ -69,6 +46,9 @@ def main():
     args = parser.parse_args(args=sys.argv[1:])
     if args.log_level is not None:
         log.set_level(args.log_level.upper())
+
+    import plover.gui_wx.main as gui
+
     try:
         # Ensure only one instance of Plover is running at a time.
         with plover.oslayer.processlock.PloverLock():
@@ -81,14 +61,13 @@ def main():
             log.info('Plover %s', __version__)
             config = Config()
             config.target_file = CONFIG_FILE
-            gui = plover.gui.main.PloverGUI(config)
-            gui.MainLoop()
+            gui.main(config)
             with open(config.target_file, 'wb') as f:
                 config.save(f)
     except plover.oslayer.processlock.LockNotAcquiredException:
-        show_error('Error', 'Another instance of Plover is already running.')
+        gui.show_error('Error', 'Another instance of Plover is already running.')
     except:
-        show_error('Unexpected error', traceback.format_exc())
+        gui.show_error('Unexpected error', traceback.format_exc())
     os._exit(1)
 
 if __name__ == '__main__':

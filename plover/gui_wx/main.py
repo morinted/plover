@@ -9,30 +9,43 @@ resumes stenotype translation and allows for application configuration.
 
 """
 
+# Python 2/3 compatibility.
+from __future__ import print_function
+
 import sys
 import os
+
+WXVER = '3.0'
+if not hasattr(sys, 'frozen'):
+    import wxversion
+    wxversion.ensureMinimal(WXVER)
+
 import wx
 import wx.animate
 from wx.lib.utils import AdjustRectToScreen
-import plover.app as app
+
 from plover.config import ASSETS_DIR, SPINNER_FILE, copy_default_dictionaries
-from plover.gui.config import ConfigurationDialog
-import plover.gui.add_translation
-import plover.gui.lookup
 from plover.oslayer.keyboardcontrol import KeyboardEmulation
 from plover.machine.base import STATE_ERROR, STATE_INITIALIZING, STATE_RUNNING
 from plover.machine.registry import machine_registry
-from plover.gui.paper_tape import StrokeDisplayDialog
-from plover.gui.suggestions import SuggestionsDisplayDialog
-from plover import log
+from plover import (
+    __name__ as __software_name__,
+    __version__,
+    __copyright__,
+    __long_description__,
+    __url__,
+    __credits__,
+    __license__,
+    app,
+    log,
+)
 
-from plover import __name__ as __software_name__
-from plover import __version__
-from plover import __copyright__
-from plover import __long_description__
-from plover import __url__
-from plover import __credits__
-from plover import __license__
+
+from plover.gui_wx.config import ConfigurationDialog
+import plover.gui_wx.add_translation
+import plover.gui_wx.lookup
+from plover.gui_wx.paper_tape import StrokeDisplayDialog
+from plover.gui_wx.suggestions import SuggestionsDisplayDialog
 
 
 class PloverGUI(wx.App):
@@ -51,7 +64,7 @@ class PloverGUI(wx.App):
     def OnInit(self):
         """Called just before the application starts."""
         # Enable GUI logging.
-        from plover.gui import log as gui_log
+        from plover.gui_wx import log as gui_log
         frame = MainFrame(self.config)
         self.SetTopWindow(frame)
 
@@ -279,11 +292,11 @@ class MainFrame(wx.Frame):
             wx.CallAfter(f)
             return True
         elif command == self.COMMAND_ADD_TRANSLATION:
-            wx.CallAfter(plover.gui.add_translation.Show, 
+            wx.CallAfter(plover.gui_wx.add_translation.Show, 
                          self, self.steno_engine, self.config)
             return True
         elif command == self.COMMAND_LOOKUP:
-            wx.CallAfter(plover.gui.lookup.Show, 
+            wx.CallAfter(plover.gui_wx.lookup.Show, 
                          self, self.steno_engine, self.config)
             return True
             
@@ -388,3 +401,23 @@ class Output(object):
         result = self.engine_command_callback(c)
         if result and not self.engine.is_running:
             self.engine.machine.suppress_last_stroke(self.send_backspaces)
+
+
+def show_error(title, message):
+    """Report error to the user.
+
+    This shows a graphical error and prints the same to the terminal.
+    """
+    print(message)
+    app = wx.App()
+    alert_dialog = wx.MessageDialog(None,
+                                    message,
+                                    title,
+                                    wx.OK | wx.ICON_INFORMATION)
+    alert_dialog.ShowModal()
+    alert_dialog.Destroy()
+
+
+def main(config):
+    gui = PloverGUI(config)
+    gui.MainLoop()
