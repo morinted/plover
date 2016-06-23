@@ -174,7 +174,7 @@ class ConfigTestCase(unittest.TestCase):
                 'floatoption1': 5.9,
                 'booloption1': False,
             }
-            c.set_machine_specific_options(machine_name, options)
+            c.set_machine_specific_options(options, machine_name)
             actual = c.get_machine_specific_options(machine_name)
             expected = dict(list(defaults.items()) + list(options.items()))
             self.assertEqual(actual, expected)
@@ -279,10 +279,10 @@ class ConfigTestCase(unittest.TestCase):
         mappings = cfg.get_system_keymap(machine)
         self.assertIsInstance(mappings, dict)
         # Mappings can be set from a dictionary.
-        cfg.set_system_keymap(machine, mappings_dict)
+        cfg.set_system_keymap(mappings_dict, machine)
         self.assertEqual(cfg.get_system_keymap(machine), mappings_dict)
         # Or from a compatible iterable of pairs (action, keys).
-        cfg.set_system_keymap(machine, mappings_list)
+        cfg.set_system_keymap(mappings_list, machine)
         self.assertEqual(cfg.get_system_keymap(machine), mappings_dict)
         def make_config_file(mappings):
             return make_config('[%s]\n%s = %s\n\n' % (section, option, json.dumps(mappings)))
@@ -294,7 +294,7 @@ class ConfigTestCase(unittest.TestCase):
         # On save, a sorted list of pairs (action, keys) is expected.
         # (to reduce differences between saves)
         cfg = config.Config()
-        cfg.set_system_keymap(machine, mappings_dict)
+        cfg.set_system_keymap(mappings_dict, machine)
         contents = make_config()
         cfg.save(contents)
         self.assertEqual(contents.getvalue(), make_config_file(sorted(mappings_list)).getvalue())
