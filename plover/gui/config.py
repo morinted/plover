@@ -241,8 +241,7 @@ class MachineConfig(wx.Panel):
         auto_start = self.auto_start_checkbox.GetValue()
         self.config.set_auto_start(auto_start)
         if self.advanced_options:
-            self.config.set_machine_specific_options(machine_type,
-                                                     self.advanced_options)
+            self.config.set_machine_specific_options(self.advanced_options, machine_type)
 
     def _advanced_config(self, event=None):
         config_instance = SimpleNamespace(**self.advanced_options)
