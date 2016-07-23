@@ -11,6 +11,7 @@ import sys
 from distutils import log
 import pkg_resources
 import setuptools
+from setuptools.command.build_py import build_py
 
 from plover import (
     __name__ as __software_name__,
@@ -24,6 +25,16 @@ from plover import (
 )
 
 from utils.metadata import copy_metadata
+
+
+# Don't use six to avoid dependency with 'write_requirements' command.
+PY3 = sys.version_info[0] >= 3
+
+PACKAGE = '%s-%s-%s' % (
+    __software_name__,
+    __version__,
+    'py3' if PY3 else 'py2',
+)
 
 
 def reload_module(mod):
@@ -49,10 +60,7 @@ def pyinstaller(*args):
         '--log-level=INFO',
         '--specpath=build',
         '--additional-hooks-dir=windows',
-        '--name=%s-%s' % (
-            __software_name__,
-            __version__,
-        ),
+        '--name=%s' % PACKAGE,
         '--noconfirm',
         '--windowed',
         '--onefile',
@@ -242,6 +250,7 @@ cmdclass = {
 setup_requires = ['six']
 options = {}
 kwargs = {}
+build_dependencies = []
 
 if sys.platform.startswith('darwin'):
     setup_requires.append('py2app')
@@ -268,6 +277,52 @@ if sys.platform.startswith('win32'):
 
 setup_requires.append('pytest')
 
+try:
+    import PyQt5
+except ImportError:
+    pass
+else:
+    setup_requires.append('pyqt-distutils')
+    try:
+        from pyqt_distutils.build_ui import build_ui
+    except ImportError:
+        pass
+    else:
+        cmdclass['build_ui'] = build_ui
+        build_dependencies.append('build_ui')
+
+setup_requires.append('Babel')
+try:
+    from babel.messages import frontend as babel
+except ImportError:
+    pass
+else:
+    cmdclass.update({
+        'compile_catalog': babel.compile_catalog,
+        'extract_messages': babel.extract_messages,
+        'init_catalog': babel.init_catalog,
+        'update_catalog': babel.update_catalog
+    })
+    locale_dir = 'plover/gui_qt/messages'
+    template = '%s/%s.pot' % (locale_dir, __software_name__)
+    options['compile_catalog'] = {
+        'domain': __software_name__,
+        'directory': locale_dir,
+    }
+    options['extract_messages'] = {
+        'output_file': template,
+    }
+    options['init_catalog'] = {
+        'domain': __software_name__,
+        'input_file': template,
+        'output_dir': locale_dir,
+    }
+    options['update_catalog'] = {
+        'domain': __software_name__,
+        'output_dir': locale_dir,
+    }
+    build_dependencies.append('compile_catalog')
+
 install_requires = [
     'six',
     'setuptools',
@@ -283,20 +338,44 @@ extras_require = {
     ],
     ':"linux" in sys_platform': [
         'python-xlib>=0.16',
-        'wxPython>=3.0',
     ],
     ':"darwin" in sys_platform': [
         'pyobjc-core>=3.0.3',
         'pyobjc-framework-Cocoa>=3.0.3',
         'pyobjc-framework-Quartz>=3.0.3',
-        'wxPython>=3.0',
         'appnope>=0.1.0',
     ],
 }
 
+packages = [
+    'plover',
+    'plover.dictionary',
+    'plover.gui_qt',
+    'plover.machine',
+    'plover.oslayer',
+    'plover.system',
+]
+
+if PY3:
+    # TODO: PyQt requirement?
+    pass
+else:
+    extras_require[':"linux" in sys_platform'].append('wxPython>=3.0')
+    extras_require[':"darwin" in sys_platform'].append('wxPython>=3.0')
+    packages.append('plover.gui_wx')
+
 tests_require = [
     'mock',
 ]
+
+
+class CustomBuildPy(build_py):
+    def run(self):
+        for command in build_dependencies:
+            self.run_command(command)
+        build_py.run(self)
+
+cmdclass['build_py'] = CustomBuildPy
 
 
 def write_requirements(extra_features=()):
@@ -332,6 +411,7 @@ if __name__ == '__main__':
         author_email='joshua.harlan.lifton@gmail.com',
         maintainer='Ted Morin',
         maintainer_email='morinted@gmail.com',
+        include_package_data=True,
         zip_safe=True,
         options=options,
         cmdclass=cmdclass,
@@ -343,14 +423,7 @@ if __name__ == '__main__':
             'console_scripts': ['plover=plover.main:main'],
             'setuptools.installation': ['eggsecutable=plover.main:main'],
         },
-        packages=[
-            'plover', 'plover.machine', 'plover.gui_wx',
-            'plover.oslayer', 'plover.dictionary',
-            'plover.system',
-        ],
-        package_data={
-            'plover': ['assets/*'],
-        },
+        packages=packages,
         data_files=[
             ('share/applications', ['application/Plover.desktop']),
             ('share/pixmaps', ['plover/assets/plover.png']),

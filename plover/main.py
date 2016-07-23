@@ -9,6 +9,9 @@ import sys
 import traceback
 import argparse
 
+# Python 2/3 compatibility.
+from six import PY2
+
 if sys.platform.startswith('darwin'):
     import appnope
 
@@ -43,11 +46,24 @@ def main():
                         % (__software_name__.capitalize(), __version__))
     parser.add_argument('-l', '--log-level', choices=['debug', 'info', 'warning', 'error'],
                         default=None, help='set log level')
+    gui_choices = ['qt']
+    if PY2:
+        gui_choices.append('wx')
+        gui_default = 'wx'
+    else:
+        gui_default = 'qt'
+    parser.add_argument('-g', '--gui', choices=gui_choices,
+                        default=gui_default, help='set gui')
     args = parser.parse_args(args=sys.argv[1:])
     if args.log_level is not None:
         log.set_level(args.log_level.upper())
 
-    import plover.gui_wx.main as gui
+    if args.gui == 'qt':
+        import plover.gui_qt.main as gui
+    elif args.gui == 'wx':
+        import plover.gui_wx.main as gui
+    else:
+        raise ValueError('invalid gui: %r', args.gui)
 
     try:
         # Ensure only one instance of Plover is running at a time.
