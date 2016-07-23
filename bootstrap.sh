@@ -105,6 +105,7 @@ osx_python2_extra_packages=(
 osx_python3_base_packages=(
 )
 osx_python3_extra_packages=(
+pyqt5
 )
 
 # }}}
@@ -123,6 +124,7 @@ arch_packages_install()
 
 arch_python2_base_packages=(
 python2-appdirs
+python2-babel
 python2-dbus
 python2-hidapi
 python2-mock
@@ -136,12 +138,14 @@ python2-wheel
 python2-xlib
 )
 arch_python2_extra_packages=(
+python2-pyqt5
 wmctrl
 )
 
 arch_python3_base_packages=(
 libusb
 python-appdirs
+python-babel
 python-dbus
 python-mock
 python-pyserial
@@ -154,6 +158,7 @@ python-wheel
 python-xlib
 )
 arch_python3_extra_packages=(
+python-pyqt5
 wmctrl
 )
 
@@ -177,6 +182,7 @@ cython
 libudev-dev
 libusb-1.0-0-dev
 python-appdirs
+python-babel
 python-dbus
 python-dev
 python-hid
@@ -192,6 +198,8 @@ python-wheel
 python-xlib
 )
 ubuntu_python2_extra_packages=(
+python-pyqt5
+python-setuptools-pyqt
 wmctrl
 )
 
@@ -200,6 +208,7 @@ cython3
 libudev-dev
 libusb-1.0-0-dev
 python3-appdirs
+python3-babel
 python3-dbus
 python3-dev
 python3-hid
@@ -215,6 +224,8 @@ python3-wheel
 python3-xlib
 )
 ubuntu_python3_extra_packages=(
+python3-pyqt5
+python3-setuptools-pyqt
 wmctrl
 )
 
