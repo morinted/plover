@@ -29,6 +29,9 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5"
+      PYTHON_ARCH: "32"
 
 cache:
   # Keep cache of downloaded pip packages.
@@ -61,7 +64,7 @@ before_build:
   - "python setup.py patch_version"
 
 build_script:
-  - "ECHO PATH=%PATH%"
+  - "python setup.py build"
 
 after_build:
   - "python windows\\helper.py dist"
