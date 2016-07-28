@@ -1,4 +1,7 @@
 
+from glob import glob
+import os
+
 import pkg_resources
 
 from utils.metadata import collect_metadata
@@ -21,3 +24,14 @@ datas.extend(metadata_list)
 
 datas.append(('plover/assets', 'plover/assets'))
 
+# Qt GUI localization.
+try:
+    from PyQt5.QtCore import QLibraryInfo
+except ImportError:
+    pass
+else:
+    for catalog in glob('plover/gui_qt/messages/*/*/*.mo'):
+        datas.append((catalog, os.path.dirname(catalog)))
+    translations_dir = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
+    for filename in glob(os.path.join(translations_dir, 'qtbase_*.qm')):
+        datas.append((filename, 'PyQt5/Qt/translations'))
