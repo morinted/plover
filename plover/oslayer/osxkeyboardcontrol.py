@@ -1,4 +1,16 @@
 # coding: utf-8
+
+import threading
+from time import sleep
+
+# Python 2/3 compatibility.
+from six import PY3
+# Note: six.move is not used as it confuses py2app...
+if PY3:
+    from queue import Queue
+else:
+    from Queue import Queue
+
 from Quartz import (
     CFMachPortCreateRunLoopSource,
     CFMachPortInvalidate,
@@ -38,9 +50,7 @@ from Quartz import (
     NSSystemDefined,
 )
 import Foundation
-import threading
-import Queue
-from time import sleep
+
 from plover.misc import characters
 from plover.oslayer.osxkeyboardlayout import KeyboardLayout
 from plover.key_combo import add_modifiers_aliases, parse_key_combo, KEYNAME_TO_CHAR
@@ -164,7 +174,7 @@ class KeyboardCapture(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self, name="KeyboardEventTapThread")
         self._loop = None
-        self._event_queue = Queue.Queue()  # Drained by event handler thread.
+        self._event_queue = Queue()  # Drained by event handler thread.
 
         self._suppressed_keys = set()
         self.key_down = lambda key: None
