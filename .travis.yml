@@ -2,7 +2,11 @@ language: generic
 
 matrix:
   include:
+    # Linux / Python 2
     - os: linux
+      env:
+        - PYTHON=python2
+        - CACHE_NAME=linux_py2
       dist: trusty
       sudo: required
       cache:
@@ -10,7 +14,33 @@ matrix:
           - $HOME/.cache/pip
       before_cache:
         - rm -rf $HOME/.cache/pip/log
+    # Linux / Python 3
+    - os: linux
+      env:
+        - PYTHON=python3
+        - CACHE_NAME=linux_py3
+      dist: trusty
+      sudo: required
+      cache:
+        directories:
+          - $HOME/.cache/pip
+      before_cache:
+        - rm -rf $HOME/.cache/pip/log
+    # OSX / Python 2
     - os: osx
+      env:
+        - PYTHON=python2
+        - CACHE_NAME=osx_py2
+      cache:
+        directories:
+          - /Users/travis/Library/Caches/pip
+      before_cache:
+        - rm -rf /Users/travis/Library/Caches/pip/log
+    # OSX / Python 3
+    - os: osx
+      env:
+        - PYTHON=python3
+        - CACHE_NAME=osx_py3
       cache:
         directories:
           - /Users/travis/Library/Caches/pip
@@ -19,53 +49,91 @@ matrix:
 
 before_install:
   - |
+    (
+    set -e
     case "$TRAVIS_OS_NAME" in
     osx)
-      brew update &&
-      brew install python --framework &&
-      brew link --overwrite python &&
-      brew install wxpython &&
-      true
+      brew update
+      case "$PYTHON" in
+      python2)
+        brew install python --framework
+        brew link --overwrite python
+        brew install wxpython
+        ;;
+      python3)
+        brew install python3 --framework
+        brew link --overwrite python3
+        brew install pyqt5
+        ;;
+      esac
       ;;
     linux)
-      sudo apt-add-repository -y ppa:benoit.pierre/plover &&
-      sudo apt-get update -qq &&
-      sudo apt-get install -y cython libudev-dev libusb-1.0-0-dev python-dev python-wxgtk3.0 python-xlib &&
-      true
+      sudo apt-add-repository -y ppa:benoit.pierre/plover
+      sudo apt-get update -qq
+      packages=(libudev-dev libusb-1.0-0-dev)
+      case "$PYTHON" in
+      python2)
+        packages+=( \
+          cython \
+          python-dev \
+          python-pip \
+          python-pkg-resources \
+          python-wheel \
+          python-wxgtk3.0 \
+          python-xlib \
+        )
+        ;;
+      python3)
+        packages+=( \
+          cython3 \
+          pyqt5-dev-tools \
+          python3-dev \
+          python3-pip \
+          python3-pkg-resources \
+          python3-pyqt5 \
+          python3-wheel \
+          python3-xlib \
+        )
+        ;;
+      esac
+      sudo apt-get install -y "${packages[@]}"
       ;;
-    esac &&
-    ./setup.py write_requirements &&
+    esac
+    # Update antiquated version of pip on Ubuntu...
+    $PYTHON -m pip install --upgrade --user pip
+    $PYTHON setup.py write_requirements
+    pip() { $PYTHON -m pip --disable-pip-version-check --timeout=5 --retries=2 "$@"; }
     # Upgrade setuptools, we need at least 19.6 to prevent issues with Cython patched 'build_ext' command.
-    pip --disable-pip-version-check --timeout=5 --retries=2 install --upgrade --user 'setuptools>=19.6' &&
+    pip install --upgrade --user 'setuptools>=19.6'
     # Manually install Cython if not already to speedup hidapi build.
-    pip --disable-pip-version-check --timeout=5 --retries=2 install --user Cython &&
-    pip --disable-pip-version-check --timeout=5 --retries=2 install --upgrade --user -r requirements.txt &&
+    pip install --user Cython
+    pip install --upgrade --user -r requirements.txt
     # And now downgrade setuptools so py2app works correctly...
-    pip --disable-pip-version-check --timeout=5 --retries=2 install --upgrade --user 'setuptools==19.2' &&
-    pip --disable-pip-version-check list &&
-    true
+    pip install --upgrade --user 'setuptools==19.2'
+    pip list
+    )
 
 install: true
 
 script:
   - git fetch --unshallow
-  - ./setup.py patch_version
-  - ./setup.py test
+  - $PYTHON setup.py patch_version
+  - $PYTHON setup.py test
 
 before_deploy:
   - |
+    (
+    set -e
     case "$TRAVIS_OS_NAME" in
     osx)
-      make -C osx &&
-      true
+      $PYTHON setup.py bdist_dmg
       ;;
     linux)
-      ./setup.py bdist_egg &&
-      ./setup.py bdist_wheel &&
-      true
+      $PYTHON setup.py bdist_{egg,wheel}
       ;;
-    esac &&
+    esac
     du -hs dist/*
+    )
 
 deploy:
   provider: releases
