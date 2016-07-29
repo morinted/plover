@@ -219,9 +219,13 @@ class BinaryDistApp(setuptools.Command):
         # Make sure metadata are up-to-date first.
         self.run_command('egg_info')
         self.run_command('py2app')
-        app = 'dist/%s-%s.app' % (__software_name__, __version__)
-        libdir = '%s/Contents/Resources/lib/python2.7' % app
-        sitezip = '%s/site-packages.zip' % libdir
+        app = 'dist/%s.app' % PACKAGE
+        if PY3:
+            libdir = '%s/Contents/Resources/lib/python3.5' % app
+            sitezip = '%s/Contents/Resources/lib/python35.zip' % app
+        else:
+            libdir = '%s/Contents/Resources/lib/python2.7' % app
+            sitezip = '%s/site-packages.zip' % libdir
         # Add version to filename and strip other architectures.
         # (using py2app --arch is not enough).
         tmp_app = 'dist/%s.app' % __software_name__
@@ -239,6 +243,17 @@ class BinaryDistApp(setuptools.Command):
         subprocess.check_call(cmd.split())
         # Add packages metadata.
         copy_metadata('.', libdir)
+
+
+class BinaryDistDmg(BinaryDistApp):
+
+    def run(self):
+        BinaryDistApp.run(self)
+        app = 'dist/%s.app' % PACKAGE
+        dmg = 'dist/%s.dmg' % PACKAGE
+        cmd = 'bash -x osx/app2dmg.sh %s %s' % (app, dmg)
+        log.info('running %s', cmd)
+        subprocess.check_call(cmd.split())
 
 
 cmdclass = {
@@ -270,6 +285,7 @@ if sys.platform.startswith('darwin'):
     # Py2app will not look at entry_points.
     kwargs['app'] = 'plover/main.py',
     cmdclass['bdist_app'] = BinaryDistApp
+    cmdclass['bdist_dmg'] = BinaryDistDmg
 
 if sys.platform.startswith('win32'):
     setup_requires.append('PyInstaller==3.1.1')
