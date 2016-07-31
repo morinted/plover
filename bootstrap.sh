@@ -224,6 +224,9 @@ python3-wheel
 python3-xlib
 )
 ubuntu_python3_extra_packages=(
+debhelper
+devscripts
+python3-all
 python3-pyqt5
 python3-setuptools-pyqt
 wmctrl
