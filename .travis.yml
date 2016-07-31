@@ -82,6 +82,15 @@ before_install:
           python-wxgtk3.0 \
           python-xlib \
         )
+        packages+=( \
+          debhelper \
+          devscripts \
+          pyqt5-dev-tools \
+          python-all \
+          python-hid \
+          python-pyqt5 \
+          python-pytest \
+        )
         ;;
       python3)
         packages+=( \
@@ -130,6 +139,10 @@ before_deploy:
       ;;
     linux)
       $PYTHON setup.py bdist_{egg,wheel}
+      if [ $PYTHON = python2 ]
+      then
+        ./linux/debuild.sh -us -uc
+      fi
       ;;
     esac
     du -hs dist/*
@@ -143,6 +156,7 @@ deploy:
   draft: true
   file_glob: true
   file:
+    - "dist/*.deb"
     - "dist/*.dmg"
     - "dist/*.egg"
     - "dist/*.whl"
