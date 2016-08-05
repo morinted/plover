@@ -39,6 +39,8 @@ PACKAGE = '%s-%s-%s' % (
     __version__,
     'py3' if PY3 else 'py2',
 )
+if sys.platform.startswith('win32') and sys.maxsize > 2**32:
+    PACKAGE += '-amd64'
 
 
 def get_version():
