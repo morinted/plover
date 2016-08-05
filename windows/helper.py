@@ -14,10 +14,6 @@ import traceback
 
 
 PY3 = sys.version_info[0] >= 3
-if PY3:
-    pass
-else:
-    SITE_DIR = r'C:\Python27\Lib\site-packages'
 WIN_DIR = os.path.dirname(os.path.abspath(__file__))
 TOP_DIR = os.path.dirname(WIN_DIR)
 NULL = open(os.devnull, 'r+b')
@@ -71,7 +67,7 @@ class Environment(object):
         self.verbose = False
         self._env = {}
 
-    def setup(self):
+    def setup(self, win64=False):
         pass
 
     def get_realpath(self, path):
@@ -129,17 +125,18 @@ class WineEnvironment(Environment):
         super(WineEnvironment, self).__init__()
         self._prefix = os.path.abspath(prefix)
         self._env['WINEPREFIX'] = self._prefix
-        self._env['WINEARCH'] = 'win32'
         self._env['WINEDEBUG'] = '-all'
         self._env['WINETRICKS_OPT_SHAREDPREFIX'] = '1'
 
-    def setup(self):
+    def setup(self, win64=False):
         if not os.path.exists(self._prefix):
             info('intializing Wine prefix')
             for cmd in (
-                'env DISPLAY= wineboot --init',
+                'env DISPLAY= WINEARCH=%s wineboot --init' % (
+                    'win64' if win64 else 'win32'
+                ),
                 'wineserver -w',
-                'winetricks --no-isolate --unattended corefonts vcrun2008',
+                # 'winetricks --no-isolate --unattended corefonts vcrun2008',
                 'winetricks win7',
             ):
                 self.run(cmd.split())
@@ -219,7 +216,7 @@ class Win32Environment(Environment):
         super(Win32Environment, self).__init__()
         self._path = None
 
-    def setup(self):
+    def setup(self, win64=False):
         if self.dry_run:
             return
         tempdir = self.get_realpath(TEMP_DIR)
@@ -251,20 +248,50 @@ class Win32Environment(Environment):
 class Helper(object):
 
     if PY3:
+        # Note: update pip so hidapi install from wheel works.
         DEPENDENCIES = (
-            # Update pip so hidapi install from wheel works.
-            ('pip'              , 'pip:pip'                                                                                                           , None                                      , None, (), None),
-            ('PyQt5'            , 'pip:PyQt5'                                                                                                         , None                                      , None, (), None),
-            ('pywin32'          , 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win32-py3.5.exe'                 , '5c9bd9643982dbfea4aba500503227dd997931df', 'easy_install', (), None),
-            ('hidapi'           , 'https://ci.appveyor.com/api/buildjobs/8fmbo62na67jwff6/artifacts/dist/hidapi-0.7.99.post17-cp35-cp35m-win32.whl'   , '4d824074ca8c50cb042588158ec1e05fa01b1142', 'pip', (), None),
+            ('pip', 'pip:pip',
+             None, None, (), None),
+            ('PyQt5', 'pip:PyQt5',
+             None, None, (), None),
+            ('pywin32', 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build 220/pywin32-220.win32-py3.5.exe',
+             '5c9bd9643982dbfea4aba500503227dd997931df', 'easy_install', (), None),
+            ('hidapi', 'https://ci.appveyor.com/api/buildjobs/8fmbo62na67jwff6/artifacts/dist/hidapi-0.7.99.post17-cp35-cp35m-win32.whl',
+             '4d824074ca8c50cb042588158ec1e05fa01b1142', 'pip', (), None),
+        )
+        DEPENDENCIES_64 = (
+            ('pip', 'pip:pip',
+             None, None, (), None),
+            ('PyQt5', 'pip:PyQt5',
+             None, None, (), None),
+            ('pywin32', 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build 220/pywin32-220.win-amd64-py3.5.exe',
+             'fb48100c7f01d0aafe9ef82dfcb7f79285e48def', 'easy_install', (), None),
+            ('hidapi', 'https://ci.appveyor.com/api/buildjobs/pynb9n1oijh0f486/artifacts/dist/hidapi-0.7.99.post17-cp35-cp35m-win_amd64.whl',
+             'd5ce39f876e39adde1594aaf818fadc1875a1e2e', 'pip', (), None),
         )
     else:
+        # Note: we force the wxPython installation directory, otherwise the
+        # installer gets confused when run under AppVeyor, and installs in the
+        # wrong directory...
         DEPENDENCIES = (
-            # Note: we force the installation directory, otherwise the installer gets confused when run under AppVeyor, and installs in the wrong directory...
-            ('wxPython'         , 'https://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe'                                     , '864d44e418a0859cabff71614a495bea57738c5d', None, ('/SP-', '/VERYSILENT', '/DIR=%s' % SITE_DIR), None),
-            ('pywin32'          , 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win32-py2.7.exe'                   , '8bc39008383c646bed01942584117113ddaefe6b', 'easy_install', (), None),
-            ('Cython'           , 'https://pypi.python.org/packages/2.7/C/Cython/Cython-0.23.4-cp27-none-win32.whl'                                   , 'd7c1978fe2037674b151622158881c700ac2f06a', None, (), None),
-            ('VC for Python'    , 'https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi'              , '7800d037ba962f288f9b952001106d35ef57befe', None, (), None),
+            ('wxPython', 'https://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe',
+             '864d44e418a0859cabff71614a495bea57738c5d', None, ('/SP-', '/VERYSILENT', r'/DIR=C:\Python27\Lib\site-packages'), None),
+            ('pywin32', 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win32-py2.7.exe',
+             '8bc39008383c646bed01942584117113ddaefe6b', 'easy_install', (), None),
+            ('Cython', 'https://pypi.python.org/packages/2.7/C/Cython/Cython-0.23.4-cp27-none-win32.whl',
+             'd7c1978fe2037674b151622158881c700ac2f06a', None, (), None),
+            ('VC for Python', 'https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi',
+             '7800d037ba962f288f9b952001106d35ef57befe', None, (), None),
+        )
+        DEPENDENCIES_64 = (
+            ('wxPython', 'https://downloads.sourceforge.net/wxpython/wxPython3.0-win64-3.0.2.0-py27.exe',
+             '32c27449b7b82840b71b9dea07c9b97cb67f4ad6', None, ('/SP-', '/VERYSILENT', r'/DIR=C:\Python27\Lib\site-packages'), None),
+            ('pywin32', 'https://downloads.sourceforge.net/project/pywin32/pywin32/Build 219/pywin32-219.win-amd64-py2.7.exe',
+             'bb5db0951dde90c99bbf011bd0fa5aff657969ee', 'easy_install', (), None),
+            ('Cython', 'https://pypi.python.org/packages/2.7/C/Cython/Cython-0.23.4-cp27-none-win_amd64.whl',
+             '79596ffb754a03ef75ef160d7d3b8c910baf568c', None, (), None),
+            ('VC for Python', 'https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi',
+             '7800d037ba962f288f9b952001106d35ef57befe', None, (), None),
         )
 
     def __init__(self):
@@ -491,14 +518,19 @@ class Helper(object):
             print()
             parser.print_help()
 
-    def cmd_setup(self, interactive=False):
+    def cmd_setup(self, interactive=False, win64=False):
         '''setup environment
 
         interactive: don't run unattended
+        win64: setup 64bits version (default is 32bits)
         '''
         self.unattended = not interactive
-        self._env.setup()
-        for name, src, checksum, handler_format, handler_args, path_dir in self.DEPENDENCIES:
+        self._env.setup(win64)
+        if win64:
+            deps = self.DEPENDENCIES_64
+        else:
+            deps = self.DEPENDENCIES
+        for name, src, checksum, handler_format, handler_args, path_dir in deps:
             self.install(name, src, checksum, handler_format=handler_format, handler_args=handler_args, path_dir=path_dir)
         info('install requirements')
         self._env.run(('python.exe', 'setup.py', 'write_requirements'))
@@ -559,12 +591,22 @@ class WineHelper(Helper):
 
     if PY3:
         DEPENDENCIES = (
-            ('Python', 'https://www.python.org/ftp/python/3.5.2/python-3.5.2.exe', '3873deb137833a724be8932e3ce659f93741c20b', None, ('PrependPath=1', '/S'), None),
+            ('Python', 'https://www.python.org/ftp/python/3.5.2/python-3.5.2.exe',
+             '3873deb137833a724be8932e3ce659f93741c20b', None, ('PrependPath=1', '/S'), None),
         ) + Helper.DEPENDENCIES
+        DEPENDENCIES_64 = (
+            ('Python', 'https://www.python.org/ftp/python/3.5.2/python-3.5.2-amd64.exe',
+             'f76856d506a9dcc03591122c2b53d8802caee2b9', None, ('PrependPath=1', '/S'), None),
+        ) + Helper.DEPENDENCIES_64
     else:
         DEPENDENCIES = (
-            ('Python', 'https://www.python.org/ftp/python/2.7.11/python-2.7.11.msi', 'b14ebf1198fe4bbb940bcce90d910b8eddd60209', None, (), None),
+            ('Python', 'https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi',
+             '662142691e0beba07a0bacee48e5e93a02537ff7', None, (), None),
         ) + Helper.DEPENDENCIES
+        DEPENDENCIES_64 = (
+            ('Python', 'https://www.python.org/ftp/python/2.7.12/python-2.7.12.amd64.msi',
+             '55b4591c47be64d810f6da26831051933e7f45ff', None, (), None),
+        ) + Helper.DEPENDENCIES_64
 
     def __init__(self):
         super(WineHelper, self).__init__()
@@ -581,10 +623,13 @@ class WineHelper(Helper):
 
 class Win32Helper(Helper):
 
+    # Install wget first, since we'll be using it for fetching some of the other dependencies.
     DEPENDENCIES = (
-        # Install wget first, since we'll be using it for fetching some of the other dependencies.
         ('wget', 'pip:wget', None, None, (), None),
     ) + Helper.DEPENDENCIES
+    DEPENDENCIES_64 = (
+        ('wget', 'pip:wget', None, None, (), None),
+    ) + Helper.DEPENDENCIES_64
 
     def __init__(self):
         super(Win32Helper, self).__init__()
