@@ -29,9 +29,15 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
+      HELPER_OPTS: ""
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "32"
+      HELPER_OPTS: ""
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5"
+      PYTHON_ARCH: "64"
+      HELPER_OPTS: "--win64"
 
 cache:
   # Keep cache of downloaded pip packages.
@@ -52,7 +58,7 @@ install:
   - "python --version"
 
   # Setup the rest of the environment.
-  - "python windows\\helper.py setup"
+  - "python windows\\helper.py setup %HELPER_OPTS%"
 
   - "pip --disable-pip-version-check list"
 
