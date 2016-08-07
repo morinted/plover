@@ -49,7 +49,6 @@ from Quartz import (
     NSEvent,
     NSSystemDefined,
 )
-import Foundation
 
 from plover.misc import characters
 from plover.oslayer.osxkeyboardlayout import KeyboardLayout
@@ -442,8 +441,8 @@ class KeyboardEmulation(object):
 
     @staticmethod
     def _set_event_string(event, s):
-        buf = Foundation.NSString.stringWithString_(s)
-        CGEventKeyboardSetUnicodeString(event, len(buf), buf)
+        nb_utf16_codepoints = len(s.encode('utf-16-le')) // 2
+        CGEventKeyboardSetUnicodeString(event, nb_utf16_codepoints, s)
 
     MODS_MASK = (
         kCGEventFlagMaskAlternate |
