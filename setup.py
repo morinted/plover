@@ -341,6 +341,8 @@ else:
     }
     build_dependencies.append('compile_catalog')
 
+dependency_links = [
+]
 install_requires = [
     'six',
     'setuptools',
@@ -409,6 +411,9 @@ def write_requirements(extra_features=()):
     with open('requirements.txt', 'w') as fp:
         fp.write('\n'.join(requirements))
         fp.write('\n')
+    with open('requirements_constraints.txt', 'w') as fp:
+        fp.write('\n'.join(dependency_links))
+        fp.write('\n')
 
 
 if __name__ == '__main__':
@@ -437,6 +442,7 @@ if __name__ == '__main__':
         install_requires=install_requires,
         extras_require=extras_require,
         tests_require=tests_require,
+        dependency_links=dependency_links,
         entry_points={
             'console_scripts': ['plover=plover.main:main'],
             'setuptools.installation': ['eggsecutable=plover.main:main'],
