@@ -13,5 +13,5 @@
     "pyrcc_options": "",
     "pyuic": "pyuic5",
     "pyuic_options": "--from-import",
-    "hooks": ["gettext"]
+    "hooks": ["fix_icons", "gettext"]
 }

@@ -306,7 +306,14 @@ else:
     except ImportError:
         pass
     else:
-        cmdclass['build_ui'] = build_ui
+        class BuildUi(build_ui):
+
+            def run(self):
+                from utils.pyqt import fix_icons
+                self._hooks['fix_icons'] = fix_icons
+                build_ui.run(self)
+
+        cmdclass['build_ui'] = BuildUi
         build_dependencies.append('build_ui')
 
 setup_requires.append('Babel')
