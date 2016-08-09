@@ -20,8 +20,7 @@ from plover.translation import escape_translation, unescape_translation
 from plover.steno import normalize_steno
 
 from plover.gui_qt.dictionary_editor_ui import Ui_DictionaryEditor
-from plover.gui_qt.utils import ToolBar, WindowState
-
+from plover.gui_qt.utils import ToolBar, WindowState, SetSvgIcons
 
 DictionaryItem = namedtuple('DictionaryItem', 'strokes translation dictionary')
 
@@ -263,6 +262,7 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
     def __init__(self, engine, dictionary_paths, parent=None):
         super(DictionaryEditor, self).__init__(parent)
         self.setupUi(self)
+        SetSvgIcons(self)
         self._engine = engine
         with engine:
             dictionary_list = [

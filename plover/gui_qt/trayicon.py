@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QMessageBox, QSystemTrayIcon
 from plover import __name__ as __software_name__
 from plover import log
 
+import sys
+
 
 class TrayIcon(QObject):
 
@@ -20,7 +22,9 @@ class TrayIcon(QObject):
             'disabled',
             'enabled',
         ):
-            self._state_icons[state] = QIcon(':/state-%s.png' % state)
+            icon = QIcon(':/state-%s.png' % state)
+            icon.setIsMask(True)
+            self._state_icons[state] = icon
         self._machine = None
         self._machine_state = 'disconnected'
         self._is_running = False
@@ -61,7 +65,8 @@ class TrayIcon(QObject):
         if not self._supported:
             return
         self._trayicon = QSystemTrayIcon()
-        self._trayicon.activated.connect(self._on_activated)
+        if not sys.platform.startswith('darwin'):
+            self._trayicon.activated.connect(self._on_activated)
         self._enabled = True
         self._update_state()
         self._trayicon.show()

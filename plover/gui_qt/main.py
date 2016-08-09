@@ -12,6 +12,7 @@ from PyQt5.QtCore import (
     QLibraryInfo,
     QTimer,
     QTranslator,
+    Qt,
 )
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -42,6 +43,7 @@ class Application(object):
         QCoreApplication.setOrganizationDomain('openstenoproject.org')
 
         self._app = QApplication(sys.argv[:1])
+        self._app.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
         # Enable localization of standard Qt controls.
         self._translator = QTranslator()

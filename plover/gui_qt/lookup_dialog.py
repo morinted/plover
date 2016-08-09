@@ -8,7 +8,7 @@ from plover.translation import unescape_translation
 
 from plover.gui_qt.lookup_dialog_ui import Ui_LookupDialog
 from plover.gui_qt.suggestions_widget import SuggestionsWidget
-from plover.gui_qt.utils import WindowState
+from plover.gui_qt.utils import WindowState, SetSvgIcons
 
 
 class LookupDialog(QDialog, Ui_LookupDialog, WindowState):
@@ -18,6 +18,7 @@ class LookupDialog(QDialog, Ui_LookupDialog, WindowState):
     def __init__(self, engine):
         super(LookupDialog, self).__init__()
         self.setupUi(self)
+        SetSvgIcons(self)
         suggestions = SuggestionsWidget()
         self.layout().replaceWidget(self.suggestions, suggestions)
         self.suggestions = suggestions

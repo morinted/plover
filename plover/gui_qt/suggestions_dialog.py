@@ -12,13 +12,14 @@ from PyQt5.QtWidgets import (
     QFontDialog,
     QDialog,
     QMenu,
+    QStyleFactory,
 )
 
 from plover.suggestions import Suggestion
 
 from plover.gui_qt.suggestions_dialog_ui import Ui_SuggestionsDialog
 from plover.gui_qt.suggestions_widget import SuggestionsWidget
-from plover.gui_qt.utils import ToolBar, WindowState
+from plover.gui_qt.utils import ToolBar, WindowState, SetSvgIcons
 
 
 class SuggestionsDialog(QDialog, Ui_SuggestionsDialog, WindowState):
@@ -38,6 +39,7 @@ class SuggestionsDialog(QDialog, Ui_SuggestionsDialog, WindowState):
     def __init__(self, engine):
         super(SuggestionsDialog, self).__init__()
         self.setupUi(self)
+        SetSvgIcons(self)
         suggestions = SuggestionsWidget()
         self.layout().replaceWidget(self.suggestions, suggestions)
         self.suggestions = suggestions
@@ -45,11 +47,13 @@ class SuggestionsDialog(QDialog, Ui_SuggestionsDialog, WindowState):
         self._words = u''
         self._last_suggestions = None
         # Toolbar.
-        self.layout().addWidget(ToolBar(
-            self.action_ToggleOnTop,
-            self.action_SelectFont,
-            self.action_Clear,
-        ))
+        self.layout().addWidget(
+            ToolBar(
+                self.action_ToggleOnTop,
+                self.action_SelectFont,
+                self.action_Clear,
+            )
+        )
         self.action_Clear.setEnabled(False)
         # Font popup menu.
         self._font_menu = QMenu()

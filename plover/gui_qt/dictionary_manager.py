@@ -12,7 +12,7 @@ from plover.dictionary.base import dictionaries as dictionary_formats
 
 from plover.gui_qt.dictionary_manager_ui import Ui_DictionaryManager
 from plover.gui_qt.dictionary_editor import DictionaryEditor
-from plover.gui_qt.utils import ToolBar, WindowState
+from plover.gui_qt.utils import ToolBar, WindowState, SetSvgIcons
 
 
 class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
@@ -22,6 +22,7 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
     def __init__(self, engine):
         super(DictionaryManager, self).__init__()
         self.setupUi(self)
+        SetSvgIcons(self)
         self._engine = engine
         self._states = []
         self._dictionaries = []
@@ -37,7 +38,6 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             self.action_EditDictionaries,
             self.action_RemoveDictionaries,
             self.action_AddDictionaries,
-            self.action_AddTranslation,
         ))
         self._update_dictionaries(engine.config['dictionary_file_names'],
                                   record=False, save=False)
@@ -174,6 +174,3 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             if filename not in dictionaries:
                 dictionaries.append(filename)
         self._update_dictionaries(dictionaries)
-
-    def on_add_translation(self):
-        self._engine.command_add_translation.emit()

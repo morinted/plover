@@ -23,7 +23,7 @@ from plover.gui_qt.suggestions_dialog import SuggestionsDialog
 from plover.gui_qt.about_dialog import AboutDialog
 from plover.gui_qt.paper_tape import PaperTape
 from plover.gui_qt.trayicon import TrayIcon
-from plover.gui_qt.utils import WindowState, find_menu_actions
+from plover.gui_qt.utils import WindowState, find_menu_actions, SetSvgIcons
 
 
 class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
@@ -33,6 +33,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
     def __init__(self, engine, use_qt_notifications):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+        SetSvgIcons(self)
         self._engine = engine
         self._active_dialogs = {}
         self._dialog_class = {

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 from plover import system
 
 from plover.gui_qt.paper_tape_ui import Ui_PaperTape
-from plover.gui_qt.utils import ToolBar, WindowState
+from plover.gui_qt.utils import ToolBar, WindowState, SetSvgIcons
 
 
 class PaperTape(QDialog, Ui_PaperTape, WindowState):
@@ -26,6 +26,7 @@ class PaperTape(QDialog, Ui_PaperTape, WindowState):
     def __init__(self, engine):
         super(PaperTape, self).__init__()
         self.setupUi(self)
+        SetSvgIcons(self)
         self._engine = engine
         self._strokes = []
         self._all_keys = None

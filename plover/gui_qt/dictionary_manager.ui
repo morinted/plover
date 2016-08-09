@@ -117,21 +117,6 @@
     <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="action_AddTranslation">
-   <property name="icon">
-    <iconset resource="resources/resources.qrc">
-     <normaloff>:/new.png</normaloff>:/new.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;New translation</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a new translation</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
  </widget>
  <layoutdefault spacing="5" margin="8"/>
  <resources>
@@ -207,22 +192,6 @@
    <signal>triggered()</signal>
    <receiver>DictionaryManager</receiver>
    <slot>on_add_dictionaries()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>199</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>action_AddTranslation</sender>
-   <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
-   <slot>on_add_translation()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>

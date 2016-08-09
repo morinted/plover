@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>258</width>
-    <height>124</height>
+    <width>323</width>
+    <height>159</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -25,6 +25,15 @@
   <property name="windowIcon">
    <iconset resource="resources/resources.qrc">
     <normaloff>:/plover.png</normaloff>:/plover.png</iconset>
+  </property>
+  <property name="iconSize">
+   <size>
+    <width>48</width>
+    <height>48</height>
+   </size>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>true</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -67,8 +76,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>258</width>
-     <height>19</height>
+     <width>323</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Application">
@@ -108,6 +117,18 @@
    <property name="windowTitle">
     <string>Plover: Toolbar</string>
    </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
@@ -136,7 +157,7 @@
   <action name="action_Configure">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/preferences.png</normaloff>:/preferences.png</iconset>
+     <normaloff>:/settings.svg</normaloff>:/settings.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Configure</string>
@@ -151,7 +172,7 @@
   <action name="action_AddTranslation">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/new.png</normaloff>:/new.png</iconset>
+     <normaloff>:/add-translation.svg</normaloff>:/add-translation.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;New translation</string>
@@ -166,7 +187,7 @@
   <action name="action_Lookup">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/search.png</normaloff>:/search.png</iconset>
+     <normaloff>:/magnify.svg</normaloff>:/magnify.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Lookup</string>
@@ -181,7 +202,7 @@
   <action name="action_ManageDictionaries">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/dictionary.png</normaloff>:/dictionary.png</iconset>
+     <normaloff>:/books.svg</normaloff>:/books.svg</iconset>
    </property>
    <property name="text">
     <string>Manage &amp;dictionaries</string>
@@ -196,7 +217,7 @@
   <action name="action_PaperTape">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/tape.png</normaloff>:/tape.png</iconset>
+     <normaloff>:/tape.svg</normaloff>:/tape.svg</iconset>
    </property>
    <property name="text">
     <string>Paper &amp;tape</string>
@@ -211,7 +232,7 @@
   <action name="action_Suggestions">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/suggestions.png</normaloff>:/suggestions.png</iconset>
+     <normaloff>:/lightbulb.png</normaloff>:/lightbulb.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Suggestions</string>
@@ -234,7 +255,7 @@
   <action name="action_Reconnect">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/refresh.png</normaloff>:/refresh.png</iconset>
+     <normaloff>:/refresh.svg</normaloff>:/refresh.svg</iconset>
    </property>
    <property name="text">
     <string>R&amp;econnect machine</string>
