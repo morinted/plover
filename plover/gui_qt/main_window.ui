@@ -74,7 +74,7 @@
      <height>19</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu_Application">
+   <widget class="QMenu" name="menu_File">
     <property name="title">
      <string>&amp;File</string>
     </property>
@@ -86,7 +86,7 @@
     <addaction name="action_ShowHide"/>
     <addaction name="action_Quit"/>
    </widget>
-   <widget class="QMenu" name="menu_Dictionaries">
+   <widget class="QMenu" name="menu_Tools">
     <property name="title">
      <string>&amp;Tools</string>
     </property>
@@ -102,8 +102,8 @@
     </property>
     <addaction name="action_About"/>
    </widget>
-   <addaction name="menu_Application"/>
-   <addaction name="menu_Dictionaries"/>
+   <addaction name="menu_File"/>
+   <addaction name="menu_Tools"/>
    <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

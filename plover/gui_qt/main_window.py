@@ -55,21 +55,21 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             log.add_handler(handler)
         all_actions = find_menu_actions(self.menubar)
         popup_menu = QMenu()
-        for action_id in (
-            'File.Toggle output',
-            'File.Reconnect machine',
+        for action_name in (
+            'action_ToggleOutput',
+            'action_Reconnect',
             '',
-            'Tools',
+            'menu_Tools',
             '',
-            'File.Configure',
+            'action_Configure',
             '',
-            'Help',
+            'menu_Help',
             '',
-            'File.Show/Hide',
-            'File.Quit Plover',
+            'action_ShowHide',
+            'action_Quit',
         ):
-            if action_id:
-                popup_menu.addAction(all_actions[action_id])
+            if action_name:
+                popup_menu.addAction(all_actions[action_name])
             else:
                 popup_menu.addSeparator()
         self._trayicon.set_menu(popup_menu)

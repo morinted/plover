@@ -56,21 +56,18 @@ class WindowState(object):
         settings.endGroup()
 
 
-def find_menu_actions(menu, root=''):
+def find_menu_actions(menu):
     '''Recursively find and return a menu actions.'''
     actions_dict = {}
     for action in menu.actions():
-        if not action.text():
-            continue
-        action_id = root
-        if action_id:
-            action_id += '.'
-        action_id += action.text().replace('&', '')
-        actions_dict[action_id] = action
-    for sub_menu in menu.findChildren(QMenu):
-        sub_root = root
-        if sub_root:
-            sub_root += '.'
-        sub_root += sub_menu.title().replace('&', '')
-        actions_dict.update(find_menu_actions(sub_menu, sub_root))
+        name = action.objectName()
+        if not name:
+            sub_menu = action.menu()
+            if sub_menu is None:
+                continue
+            actions_dict.update(find_menu_actions(sub_menu))
+            name = sub_menu.objectName()
+        assert name
+        assert name not in actions_dict
+        actions_dict[name] = action
     return actions_dict
