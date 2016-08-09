@@ -119,7 +119,7 @@
   <action name="action_Delete">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/delete.png</normaloff>:/delete.png</iconset>
+     <normaloff>:/delete.svg</normaloff>:/delete.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Delete</string>
@@ -134,7 +134,7 @@
   <action name="action_Undo">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/undo.png</normaloff>:/undo.png</iconset>
+     <normaloff>:/undo.svg</normaloff>:/undo.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Undo</string>
@@ -149,7 +149,7 @@
   <action name="action_New">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
-     <normaloff>:/new.png</normaloff>:/new.png</iconset>
+     <normaloff>:/new.svg</normaloff>:/new.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;New translation</string>

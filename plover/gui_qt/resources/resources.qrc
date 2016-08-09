@@ -1,23 +1,23 @@
 <RCC>
   <qresource>
-    <file>suggestions.png</file>
-    <file>font.png</file>
-    <file>tape.png</file>
-    <file>on-top.png</file>
-    <file>save.png</file>
-    <file>clear.png</file>
-    <file>new.png</file>
-    <file>delete.png</file>
-    <file>undo.png</file>
-    <file>edit.png</file>
-    <file>dictionary.png</file>
-    <file>add.png</file>
-    <file>search.png</file>
-    <file>preferences.png</file>
+    <file>suggestions.svg</file>
+    <file>font.svg</file>
+    <file>tape.svg</file>
+    <file>on-top.svg</file>
+    <file>save.svg</file>
+    <file>clear.svg</file>
+    <file>new.svg</file>
+    <file>delete.svg</file>
+    <file>undo.svg</file>
+    <file>edit.svg</file>
+    <file>manager.svg</file>
+    <file>add.svg</file>
+    <file>search.svg</file>
+    <file>settings.svg</file>
     <file>state-disabled.png</file>
     <file>state-disconnected.png</file>
     <file>state-enabled.png</file>
-    <file>refresh.png</file>
+    <file>reconnect.svg</file>
     <file>plover.png</file>
   </qresource>
 </RCC>
