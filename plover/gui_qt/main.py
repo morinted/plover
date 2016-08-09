@@ -41,7 +41,7 @@ class Application(object):
         QCoreApplication.setOrganizationName('Open Steno Project')
         QCoreApplication.setOrganizationDomain('openstenoproject.org')
 
-        self._app = QApplication(sys.argv[:1])
+        self._app = QApplication([])
 
         # Enable localization of standard Qt controls.
         self._translator = QTranslator()
