@@ -59,7 +59,7 @@ class SuggestionsDialog(QDialog, Ui_SuggestionsDialog, WindowState):
         engine.translation.connect(self.on_translation)
         self.suggestions.setFocus()
         self.restore_state()
-        self.destroyed.connect(self.save_state)
+        self.finished.connect(self.save_state)
 
     def _get_font(self, name):
         return getattr(self.suggestions, name)

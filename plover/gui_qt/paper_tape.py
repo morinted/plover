@@ -45,7 +45,7 @@ class PaperTape(QDialog, Ui_PaperTape, WindowState):
         engine.stroke.connect(self.on_stroke)
         self.tape.setFocus()
         self.restore_state()
-        self.destroyed.connect(self.save_state)
+        self.finished.connect(self.save_state)
 
     def _restore_state(self, settings):
         font_string = settings.value('font')
