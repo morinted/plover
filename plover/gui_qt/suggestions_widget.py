@@ -95,7 +95,7 @@ class SuggestionsWidget(QWidget, Ui_SuggestionsWidget):
     def strokes_font(self):
         return self._strokes_char_format.font()
 
-    @text_font.setter
+    @strokes_font.setter
     def strokes_font(self, font):
         self._strokes_char_format.setFont(font)
         self._reformat()
