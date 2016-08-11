@@ -82,6 +82,9 @@ class TrayIcon(QObject):
         self._trayicon = None
         self._enabled = False
 
+    def is_enabled(self):
+        return self._enabled
+
     def update_machine_state(self, machine, state):
         self._machine = machine
         self._machine_state = state
