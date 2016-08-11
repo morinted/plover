@@ -13,6 +13,7 @@ class TrayIcon(QObject):
     def __init__(self):
         super(TrayIcon, self).__init__()
         self._supported = QSystemTrayIcon.isSystemTrayAvailable()
+        self._context_menu = None
         self._enabled = False
         self._trayicon = None
         self._state_icons = {}
@@ -28,7 +29,9 @@ class TrayIcon(QObject):
         self._update_state()
 
     def set_menu(self, menu):
-        self._trayicon.setContextMenu(menu)
+        self._context_menu = menu
+        if self._enabled:
+            self._trayicon.setContextMenu(menu)
 
     def log(self, level, message):
         if self._enabled:
@@ -66,6 +69,8 @@ class TrayIcon(QObject):
         # and activation messages are still sent, so ignore those...
         if not sys.platform.startswith('darwin'):
             self._trayicon.activated.connect(self._on_activated)
+        if self._context_menu is not None:
+            self._trayicon.setContextMenu(self._context_menu)
         self._enabled = True
         self._update_state()
         self._trayicon.show()
