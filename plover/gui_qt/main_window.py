@@ -171,12 +171,6 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
 
     def closeEvent(self, event):
         if self._trayicon.is_enabled():
-            QMessageBox.information(
-                self, QCoreApplication.applicationName(),
-                _('The program will keep running in the system tray. '
-                  'To terminate the program, choose <b>Quit</b> in the '
-                  'context menu of the system tray entry.')
-            )
             self.hide()
             event.ignore()
         else:
