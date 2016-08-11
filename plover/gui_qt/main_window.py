@@ -89,8 +89,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         engine.command_add_translation.connect(partial(self.on_add_translation, manage_windows=True))
         engine.command_configure.connect(partial(self.on_configure, manage_windows=True))
         engine.command_lookup.connect(partial(self.on_lookup, manage_windows=True))
-        # All ready, start the engine (load the configuration).
-        engine.start()
+        # Load the configuration (but do not start the engine yet).
+        engine.load_config()
         # Apply configuration settings.
         config = self._engine.config
         self.set_visible(not config['start_minimized'])
@@ -98,6 +98,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             self.on_suggestions()
         if config['show_stroke_display']:
             self.on_paper_tape()
+        # Start the engine.
+        engine.start()
 
     def set_visible(self, visible):
         if visible:

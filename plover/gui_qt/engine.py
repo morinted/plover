@@ -214,7 +214,7 @@ class Engine(QtCore.QThread):
     def reset_machine(self):
         self._same_thread_hook(self._reset_machine)
 
-    def start(self):
+    def load_config(self):
         try:
             with open(self._config.target_file, 'rb') as f:
                 self._config.load(f)
@@ -222,6 +222,8 @@ class Engine(QtCore.QThread):
             log.error('loading configuration failed, reseting to default', exc_info=True)
             self._config.clear()
             self.command_configure.emit()
+
+    def start(self):
         super(Engine, self).start()
         self._same_thread_hook(self._start)
 
