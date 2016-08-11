@@ -337,6 +337,7 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
         selection = self._selection
         assert selection
         self._model.remove_rows(selection)
+        self.action_Undo.setEnabled(self._model.has_undo)
 
     def on_new(self):
         selection = self._selection
