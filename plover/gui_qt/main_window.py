@@ -105,7 +105,6 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             self.on_paper_tape()
 
     def _activate_dialog(self, name, manage_windows=False):
-        import subprocess
         if manage_windows:
             previous_window = GetForegroundWindow()
         dialog = self._active_dialogs.get(name)
