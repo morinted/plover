@@ -267,7 +267,7 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
         with engine:
             dictionary_list = [
                 dictionary
-                for dictionary in engine.dictionary.dicts
+                for dictionary in engine.dictionaries.dicts
                 if dictionary.get_path() in dictionary_paths
             ]
         sort_column, sort_order = 0, Qt.AscendingOrder
@@ -364,6 +364,6 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
 
     def on_finished(self, result):
         with self._engine:
-            self._engine.dictionary.save(dictionary.get_path()
-                                         for dictionary
-                                         in self._model.modified)
+            self._engine.dictionaries.save(dictionary.get_path()
+                                           for dictionary
+                                           in self._model.modified)

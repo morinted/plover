@@ -296,11 +296,11 @@ class Engine(QtCore.QThread):
 
     @with_lock
     def add_translation(self, strokes, translation):
-        dictionary = self._engine.get_dictionary()
-        dictionary.set(strokes, translation)
-        dictionary.save(path_list=(dictionary.dicts[0].get_path(),))
+        dictionaries = self._engine.get_dictionary()
+        dictionaries.set(strokes, translation)
+        dictionaries.save(path_list=(dictionaries.dicts[0].get_path(),))
 
     @property
     @with_lock
-    def dictionary(self):
+    def dictionaries(self):
         return self._engine.get_dictionary()
