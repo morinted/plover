@@ -38,7 +38,7 @@ def with_lock(func):
 class Engine(QtCore.QThread):
 
     # Signals.
-    command_add_translation = QtCore.pyqtSignal()
+    command_add_translation = QtCore.pyqtSignal(QtCore.QVariant)
     command_configure = QtCore.pyqtSignal()
     command_lookup = QtCore.pyqtSignal()
     stroke = QtCore.pyqtSignal(QtCore.QVariant)
@@ -156,7 +156,7 @@ class Engine(QtCore.QThread):
         elif command == 'FOCUS':
             print('focus')
         elif command == 'ADD_TRANSLATION':
-            self.command_add_translation.emit()
+            self.command_add_translation.emit(None)
         elif command == 'LOOKUP':
             self.command_lookup.emit()
         return False
@@ -295,10 +295,13 @@ class Engine(QtCore.QThread):
         self._engine.set_starting_stroke_state(**state._asdict())
 
     @with_lock
-    def add_translation(self, strokes, translation):
+    def add_translation(self, strokes, translation, dictionary=None):
         dictionaries = self._engine.get_dictionary()
-        dictionaries.set(strokes, translation)
-        dictionaries.save(path_list=(dictionaries.dicts[0].get_path(),))
+        if dictionary is None:
+            dictionary = dictionaries.dicts[0].get_path()
+        dictionaries.set(strokes, translation,
+                         dictionary=dictionary)
+        dictionaries.save(path_list=(dictionary,))
 
     @property
     @with_lock

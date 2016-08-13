@@ -20,10 +20,17 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
 
     EngineState = namedtuple('EngineState', 'dictionary_filter translator starting_stroke')
 
-    def __init__(self, engine):
+    def __init__(self, engine, dictionary=None):
         super(AddTranslation, self).__init__()
         self.setupUi(self)
         self._engine = engine
+        dictionaries = [d.get_path() for d in engine.dictionaries.dicts]
+        self.dictionary.addItems(dictionaries)
+        if dictionary is None:
+            self.dictionary.setCurrentIndex(0)
+        else:
+            assert dictionary in dictionaries
+            self.dictionary.setCurrentIndex(dictionaries.index(dictionary))
         engine.config_changed.connect(self.on_config_changed)
         self.on_config_changed(engine.config)
         self.installEventFilter(self)
@@ -156,7 +163,9 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         strokes = self._strokes()
         translation = self._translation()
         if strokes and translation:
-            self._engine.add_translation(strokes, translation)
+            dictionary = self.dictionary.currentText()
+            self._engine.add_translation(strokes, translation,
+                                         dictionary=dictionary)
         super(AddTranslation, self).accept()
 
     def reject(self):

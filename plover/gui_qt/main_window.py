@@ -86,9 +86,9 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         ))
         self.restore_state()
         # Commands.
-        engine.command_add_translation.connect(partial(self.on_add_translation, manage_windows=True))
-        engine.command_configure.connect(partial(self.on_configure, manage_windows=True))
-        engine.command_lookup.connect(partial(self.on_lookup, manage_windows=True))
+        engine.command_add_translation.connect(partial(self._add_translation, manage_windows=True))
+        engine.command_configure.connect(partial(self._configure, manage_windows=True))
+        engine.command_lookup.connect(partial(self._lookup, manage_windows=True))
         # Load the configuration (but do not start the engine yet).
         engine.load_config()
         # Apply configuration settings.
@@ -110,13 +110,13 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             else:
                 self.showMinimized()
 
-    def _activate_dialog(self, name, manage_windows=False):
+    def _activate_dialog(self, name, args=(), manage_windows=False):
         if manage_windows:
             previous_window = GetForegroundWindow()
         dialog = self._active_dialogs.get(name)
         if dialog is None:
             dialog_class = self._dialog_class[name]
-            dialog = self._active_dialogs[name] = dialog_class(self._engine)
+            dialog = self._active_dialogs[name] = dialog_class(self._engine, *args)
             def on_finished():
                 del self._active_dialogs[name]
                 dialog.destroy()
@@ -127,6 +127,18 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         dialog.activateWindow()
         dialog.raise_()
 
+    def _add_translation(self, dictionary=None, manage_windows=False):
+        if not dictionary:
+            dictionary = None
+        self._activate_dialog('add_translation', args=(dictionary,),
+                              manage_windows=manage_windows)
+
+    def _configure(self, manage_windows=False):
+        self._activate_dialog('configuration', manage_windows=manage_windows)
+
+    def _lookup(self, manage_windows=False):
+        self._activate_dialog('lookup', manage_windows=manage_windows)
+
     def on_output_changed(self, enabled):
         self._trayicon.update_output(enabled)
         self.output.setChecked(enabled)
@@ -135,8 +147,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
     def on_toggle_output(self, enabled):
         self._engine.output = enabled
 
-    def on_configure(self, manage_windows=False):
-        self._activate_dialog('configuration', manage_windows=manage_windows)
+    def on_configure(self):
+        self._configure()
 
     def on_reconnect(self):
         self._engine.reset_machine()
@@ -144,11 +156,11 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
     def on_manage_dictionaries(self):
         self._activate_dialog('dictionary_manager')
 
-    def on_add_translation(self, manage_windows=False):
-        self._activate_dialog('add_translation', manage_windows=manage_windows)
+    def on_add_translation(self):
+        self._add_translation()
 
-    def on_lookup(self, manage_windows=False):
-        self._activate_dialog('lookup', manage_windows=manage_windows)
+    def on_lookup(self):
+        self._lookup()
 
     def on_suggestions(self):
         self._activate_dialog('suggestions')

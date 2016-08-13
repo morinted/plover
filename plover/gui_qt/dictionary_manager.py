@@ -176,4 +176,10 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
         self._update_dictionaries(dictionaries)
 
     def on_add_translation(self):
-        self._engine.command_add_translation.emit()
+        selection = [item.row() for item in self.table.selectedItems()]
+        if selection:
+            selection.sort()
+            dictionary = self._dictionaries[selection[-1]]
+        else:
+            dictionary = None
+        self._engine.command_add_translation.emit(dictionary)
