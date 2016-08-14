@@ -1,22 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DictionaryManager</class>
- <widget class="QDialog" name="DictionaryManager">
+ <class>DictionariesWidget</class>
+ <widget class="QWidget" name="DictionariesWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>366</width>
+    <height>238</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Plover: Dictionary Manager</string>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
-  <property name="sizeGripEnabled">
-   <bool>true</bool>
+  <property name="windowTitle">
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QTableWidget" name="table">
      <property name="frameShape">
@@ -51,7 +66,7 @@
      </attribute>
      <column>
       <property name="text">
-       <string>Path</string>
+       <string>Dictionary</string>
       </property>
      </column>
     </widget>
@@ -123,7 +138,7 @@
      <normaloff>:/new.svg</normaloff>:/new.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;New translation</string>
+    <string>Add &amp;translation</string>
    </property>
    <property name="toolTip">
     <string>Add a new translation</string>
@@ -141,7 +156,7 @@
   <connection>
    <sender>table</sender>
    <signal>itemSelectionChanged()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_selection_changed()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -157,7 +172,7 @@
   <connection>
    <sender>action_RemoveDictionaries</sender>
    <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_remove_dictionaries()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -173,7 +188,7 @@
   <connection>
    <sender>action_Undo</sender>
    <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_undo()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -189,7 +204,7 @@
   <connection>
    <sender>action_EditDictionaries</sender>
    <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_edit_dictionaries()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -205,7 +220,7 @@
   <connection>
    <sender>action_AddDictionaries</sender>
    <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_add_dictionaries()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -221,7 +236,7 @@
   <connection>
    <sender>action_AddTranslation</sender>
    <signal>triggered()</signal>
-   <receiver>DictionaryManager</receiver>
+   <receiver>DictionariesWidget</receiver>
    <slot>on_add_translation()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -236,9 +251,9 @@
   </connection>
   <connection>
    <sender>table</sender>
-   <signal>itemDoubleClicked(QTableWidgetItem*)</signal>
-   <receiver>DictionaryManager</receiver>
-   <slot>on_edit_dictionary(QTableWidgetItem*)</slot>
+   <signal>cellActivated(int,int)</signal>
+   <receiver>DictionariesWidget</receiver>
+   <slot>on_activate_cell(int,int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>199</x>
@@ -258,6 +273,6 @@
   <slot>on_edit_dictionaries()</slot>
   <slot>on_add_dictionaries()</slot>
   <slot>on_add_translation()</slot>
-  <slot>on_edit_dictionary(QTableWidgetItem*)</slot>
+  <slot>on_activate_cell(int,int)</slot>
  </slots>
 </ui>

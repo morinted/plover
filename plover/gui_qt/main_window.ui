@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>99</height>
+    <width>302</width>
+    <height>333</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -41,8 +41,8 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
        <widget class="QCheckBox" name="output">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -58,6 +58,26 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QScrollArea" name="scroll_area">
+        <property name="frameShape">
+         <enum>QFrame::Panel</enum>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="dictionaries">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>482</width>
+           <height>210</height>
+          </rect>
+         </property>
+        </widget>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
@@ -67,8 +87,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>250</width>
-     <height>19</height>
+     <width>502</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -88,8 +108,7 @@
      <string>&amp;Tools</string>
     </property>
     <addaction name="action_Lookup"/>
-    <addaction name="action_ManageDictionaries"/>
-    <addaction name="action_AddTranslation"/>
+    <addaction name="action_NewTranslation"/>
     <addaction name="action_PaperTape"/>
     <addaction name="action_Suggestions"/>
    </widget>
@@ -99,7 +118,13 @@
     </property>
     <addaction name="action_About"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>E&amp;dit</string>
+    </property>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
    <addaction name="menu_Tools"/>
    <addaction name="menu_Help"/>
   </widget>
@@ -122,8 +147,6 @@
    </attribute>
    <addaction name="action_Reconnect"/>
    <addaction name="action_Configure"/>
-   <addaction name="action_ManageDictionaries"/>
-   <addaction name="action_AddTranslation"/>
    <addaction name="action_Lookup"/>
    <addaction name="action_Suggestions"/>
    <addaction name="action_PaperTape"/>
@@ -154,7 +177,7 @@
     <string>Ctrl+,</string>
    </property>
   </action>
-  <action name="action_AddTranslation">
+  <action name="action_NewTranslation">
    <property name="icon">
     <iconset resource="resources/resources.qrc">
      <normaloff>:/new.svg</normaloff>:/new.svg</iconset>
@@ -182,21 +205,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+L</string>
-   </property>
-  </action>
-  <action name="action_ManageDictionaries">
-   <property name="icon">
-    <iconset resource="resources/resources.qrc">
-     <normaloff>:/manager.svg</normaloff>:/manager.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Manage &amp;dictionaries</string>
-   </property>
-   <property name="toolTip">
-    <string>Open the dictionaries manager.</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="action_PaperTape">
@@ -299,7 +307,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>action_AddTranslation</sender>
+   <sender>action_NewTranslation</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>on_add_translation()</slot>
@@ -335,22 +343,6 @@
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>on_show_hide()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>124</x>
-     <y>46</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>action_ManageDictionaries</sender>
-   <signal>triggered()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_manage_dictionaries()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>

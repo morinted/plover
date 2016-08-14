@@ -4,24 +4,22 @@ import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QFileDialog,
-    QDialog,
     QTableWidgetItem,
+    QWidget,
 )
 
 from plover.dictionary.base import dictionaries as dictionary_formats
 from plover.oslayer.config import CONFIG_DIR
 
-from plover.gui_qt.dictionary_manager_ui import Ui_DictionaryManager
+from plover.gui_qt.dictionaries_widget_ui import Ui_DictionariesWidget
 from plover.gui_qt.dictionary_editor import DictionaryEditor
-from plover.gui_qt.utils import ToolBar, WindowState
+from plover.gui_qt.utils import ToolBar
 
 
-class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
-
-    ROLE = 'dictionary_manager'
+class DictionariesWidget(QWidget, Ui_DictionariesWidget):
 
     def __init__(self, engine):
-        super(DictionaryManager, self).__init__()
+        super(DictionariesWidget, self).__init__()
         self.setupUi(self)
         self._engine = engine
         self._states = []
@@ -40,14 +38,10 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             self.action_AddDictionaries,
             self.action_AddTranslation,
         ))
-        self._update_dictionaries(engine.config['dictionary_file_names'],
-                                  record=False, save=False)
-        self.table.supportedDropActions = self.supportedDropActions
-        self.table.dragEnterEvent = self.dragEnterEvent
-        self.table.dragMoveEvent = self.dragMoveEvent
-        self.table.dropEvent = self.dropEvent
-        self.restore_state()
-        self.finished.connect(self.save_state)
+        self.table.supportedDropActions = self._supported_drop_actions
+        self.table.dragEnterEvent = self._drag_enter_event
+        self.table.dragMoveEvent = self._drag_move_event
+        self.table.dropEvent = self._drop_event
 
     @staticmethod
     def _display_filename(filename):
@@ -61,7 +55,9 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             return '~/' + filename[len(home_dir):]
         return filename
 
-    def _update_dictionaries(self, dictionaries, record=True, save=True):
+    def _update_dictionaries(self, dictionaries,
+                             record=True, save=True,
+                             scroll=False):
         if dictionaries == self._dictionaries:
             return
         if save:
@@ -71,13 +67,16 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             self.action_Undo.setEnabled(True)
         self._dictionaries = dictionaries
         self.table.setRowCount(0)
+        item = None
         for row, filename in enumerate(dictionaries):
             self.table.insertRow(row)
             item = QTableWidgetItem(self._display_filename(filename))
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
             self.table.setItem(row, 0, item)
+        if scroll and item is not None:
+            self.table.setCurrentItem(item)
 
-    def supportedDropActions(self):
+    def _supported_drop_actions(self):
         return Qt.CopyAction | Qt.LinkAction | Qt.MoveAction
 
     def is_accepted_drag_event(self, event):
@@ -98,15 +97,15 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
                 return True
         return False
 
-    def dragEnterEvent(self, event):
+    def _drag_enter_event(self, event):
         if self.is_accepted_drag_event(event):
             event.accept()
 
-    def dragMoveEvent(self, event):
+    def _drag_move_event(self, event):
         if self.is_accepted_drag_event(event):
             event.accept()
 
-    def dropEvent(self, event):
+    def _drop_event(self, event):
         if not self.is_accepted_drag_event(event):
             return
         dictionaries = list(self._dictionaries)
@@ -159,8 +158,8 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
         editor = DictionaryEditor(self._engine, dictionaries, self)
         editor.exec_()
 
-    def on_edit_dictionary(self, item):
-        self._edit([self._dictionaries[item.row()]])
+    def on_activate_cell(self, row, col):
+        self._edit([self._dictionaries[row]])
 
     def on_edit_dictionaries(self):
         dictionaries = [self._dictionaries[item.row()]

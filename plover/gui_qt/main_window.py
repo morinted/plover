@@ -16,7 +16,7 @@ from plover.oslayer.utils import GetForegroundWindow, SetForegroundWindow
 from plover.gui_qt.log_qt import NotificationHandler
 from plover.gui_qt.main_window_ui import Ui_MainWindow
 from plover.gui_qt.config_window import ConfigWindow
-from plover.gui_qt.dictionary_manager import DictionaryManager
+from plover.gui_qt.dictionaries_widget import DictionariesWidget
 from plover.gui_qt.add_translation import AddTranslation
 from plover.gui_qt.lookup_dialog import LookupDialog
 from plover.gui_qt.suggestions_dialog import SuggestionsDialog
@@ -41,12 +41,21 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             'about'             : AboutDialog,
             'add_translation'   : AddTranslation,
             'configuration'     : ConfigWindow,
-            'dictionary_manager': DictionaryManager,
             'lookup'            : LookupDialog,
             'paper_tape'        : PaperTape,
             'suggestions'       : SuggestionsDialog,
         }
         self.action_Quit.triggered.connect(QCoreApplication.quit)
+        all_actions = find_menu_actions(self.menubar)
+        # Dictionaries.
+        self.dictionaries = DictionariesWidget(engine)
+        self.scroll_area.setWidget(self.dictionaries)
+        edit_menu = all_actions['menu_Edit'].menu()
+        edit_menu.addAction(self.dictionaries.action_Undo)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self.dictionaries.action_AddDictionaries)
+        edit_menu.addAction(self.dictionaries.action_EditDictionaries)
+        edit_menu.addAction(self.dictionaries.action_RemoveDictionaries)
         # Tray icon.
         self._trayicon = TrayIcon()
         self._trayicon.enable()
@@ -55,7 +64,6 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             handler = NotificationHandler()
             handler.emitSignal.connect(self._trayicon.log)
             log.add_handler(handler)
-        all_actions = find_menu_actions(self.menubar)
         popup_menu = QMenu()
         for action_name in (
             'action_ToggleOutput',
@@ -95,6 +103,9 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         engine.load_config()
         # Apply configuration settings.
         config = self._engine.config
+        self.dictionaries._update_dictionaries(config['dictionary_file_names'],
+                                               record=False, save=False,
+                                               scroll=True)
         self.set_visible(not config['start_minimized'])
         if config['show_suggestions_display']:
             self.on_suggestions()
