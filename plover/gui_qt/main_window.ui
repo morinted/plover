@@ -26,9 +26,6 @@
    <iconset resource="resources/resources.qrc">
     <normaloff>:/plover.png</normaloff>:/plover.png</iconset>
   </property>
-  <property name="unifiedTitleAndToolBarOnMac">
-   <bool>true</bool>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">

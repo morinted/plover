@@ -33,6 +33,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
     def __init__(self, engine, use_qt_notifications):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+        if hasattr(self, 'setUnifiedTitleAndToolBarOnMac'):
+            self.setUnifiedTitleAndToolBarOnMac(True)
         self._engine = engine
         self._active_dialogs = {}
         self._dialog_class = {
