@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 )
 
 from plover.dictionary.base import dictionaries as dictionary_formats
+from plover.oslayer.config import CONFIG_DIR
 
 from plover.gui_qt.dictionary_manager_ui import Ui_DictionaryManager
 from plover.gui_qt.dictionary_editor import DictionaryEditor
@@ -48,6 +49,18 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
         self.restore_state()
         self.finished.connect(self.save_state)
 
+    @staticmethod
+    def _display_filename(filename):
+        config_dir = os.path.realpath(CONFIG_DIR)
+        if not config_dir.endswith(os.sep):
+            config_dir += os.sep
+        if filename.startswith(config_dir):
+            return filename[len(config_dir):]
+        home_dir = os.path.expanduser('~/')
+        if filename.startswith(home_dir):
+            return '~/' + filename[len(home_dir):]
+        return filename
+
     def _update_dictionaries(self, dictionaries, record=True, save=True):
         if dictionaries == self._dictionaries:
             return
@@ -60,7 +73,7 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
         self.table.setRowCount(0)
         for row, filename in enumerate(dictionaries):
             self.table.insertRow(row)
-            item = QTableWidgetItem(filename)
+            item = QTableWidgetItem(self._display_filename(filename))
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
             self.table.setItem(row, 0, item)
 
@@ -104,7 +117,7 @@ class DictionaryManager(QDialog, Ui_DictionaryManager, WindowState):
             dest_index = dest_item.row()
         if event.source() == self.table:
             sources = [
-                item.data(Qt.DisplayRole)
+                dictionaries[item.row()]
                 for item in self.table.selectedItems()
             ]
         else:
