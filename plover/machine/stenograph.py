@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2013 Hesky Fisher
+# Copyright (c) 2016 Ted Morin
 # See LICENSE.txt for details.
 
-# TODO: add tests
-
-"Thread-based monitoring of a stenotype machine using the Treal machine."
+"Thread-based monitoring of the stenograph machine."
 
 from usb import core, util
 from time import sleep
@@ -56,22 +54,18 @@ class Stenograph(ThreadedStenotypeBase):
 
             self._endpoint_out = util.find_descriptor(
                 intf,
-                # match the first OUT endpoint
-                custom_match=\
-                lambda e:\
-                util.endpoint_direction(e.bEndpointAddress) ==\
-                util.ENDPOINT_OUT)
-
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                        util.ENDPOINT_OUT)
             assert self._endpoint_out is not None
+
             self._endpoint_in = util.find_descriptor(
                 intf,
-                # match the first IN endpoint
-                custom_match=\
-                lambda e:\
-                util.endpoint_direction(e.bEndpointAddress) ==\
-                util.ENDPOINT_IN)
-
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                        util.ENDPOINT_IN)
             assert self._endpoint_in is not None
+
             connected = True
         except ValueError:
             log.warning('libusb must be installed for Plover to interface with Stenograph machines.')
@@ -144,16 +138,14 @@ class Stenograph(ThreadedStenotypeBase):
     def _process_response(self, packet):
         steno = packet[HEADER_BYTES:HEADER_BYTES + 4]
         keys = []
-        for i, b in enumerate(steno):
-            map = STENO_KEY_CHART[i]
+        for byte_number, byte in enumerate(steno):
+            byte_keys = STENO_KEY_CHART[byte_number]
             for i in range(6):
-                if (b >> i) & 1:
-                    key = map[-i + 5]
+                if (byte >> i) & 1:
+                    key = byte_keys[-i + 5]
                     if key:
                         keys.append(key)
-        steno_keys = self.keymap.keys_to_actions(keys)
-        if steno_keys:
-            self._notify(steno_keys)
+        self._on_stroke(keys)
 
     def stop_capture(self):
         """Stop listening for output from the stenotype machine."""
