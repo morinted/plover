@@ -38,11 +38,11 @@ _EXPORTS = {
 }
 
 def setup():
-    from plover.system import english_stenotype as mod
+    from plover.system import english_palantype as mod
     globs = globals()
     for symbol, init in _EXPORTS.items():
         globs[symbol] = init(mod)
-    globs['NAME'] = 'English Stenotype'
+    globs['NAME'] = 'English Palantype'
 
 
 # Setup default system.

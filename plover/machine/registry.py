@@ -9,6 +9,8 @@ from plover.machine.keyboard import Keyboard
 from plover.machine.stentura import Stentura
 from plover.machine.passport import Passport
 from plover.machine.treal import Treal
+from plover.machine.palantype import Palantype
+
 
 class NoSuchMachineException(Exception):
     def __init__(self, id):
@@ -46,6 +48,7 @@ class Registry(object):
 machine_registry = Registry()
 machine_registry.register('Keyboard', Keyboard)
 machine_registry.register('Gemini PR', GeminiPr)
+machine_registry.register('Palantype', Palantype)
 machine_registry.register('TX Bolt', TxBolt)
 machine_registry.register('Stentura', Stentura)
 machine_registry.register('Passport', Passport)
