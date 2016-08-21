@@ -8,7 +8,7 @@ KEYS = (
 
 IMPLICIT_HYPHEN_KEYS = ('O-', 'E-', '-A', '-U', 'I')
 
-SUFFIX_KEYS = ()
+SUFFIX_KEYS = ('-S')
 
 NUMBER_KEY = None
 
