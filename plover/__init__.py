@@ -3,7 +3,7 @@
 
 """Plover: Open Source Stenography Software"""
 
-__version__ = 'palantest_1'
+__version__ = 'palantest_2'
 __copyright__ = '(C) Open Steno Project'
 __url__ = 'http://www.openstenoproject.org/'
 __download_url__ = 'http://www.openstenoproject.org/plover'

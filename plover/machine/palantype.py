@@ -43,7 +43,7 @@ class Palantype(plover.machine.base.SerialStenotypeBase):
     def run(self):
         """Overrides base class run method. Do not call directly."""
         settings = self.serial_port.getSettingsDict()
-        settings['timeout'] = 0.01 # seconds
+        settings['timeout'] = 0.01
         self.serial_port.applySettingsDict(settings)
         for command in REALTIME_COMMANDS:
             self.serial_port.write(bytearray(command))
@@ -54,31 +54,26 @@ class Palantype(plover.machine.base.SerialStenotypeBase):
                 self.serial_port.write(REQUEST_READ)
                 sleep(0.2)  # Request a read 5 times a second
 
-            bytes = [0, 0, 0, 0]  # Collect 4 bytes in a list before we have a stroke.
             raw = self.serial_port.read(self.serial_port.inWaiting())
-            if len(raw):
-                raw = raw[1:]
+            # Every stroke is 5 bytes and we drop the first one.
+            for i in range(len(raw)/5):
+                keys = self._parse_packet(raw[i*5+1:(i+1)*5])
+                steno_keys = self.keymap.keys_to_actions(keys)
+                if steno_keys:
+                    self._notify(steno_keys)
 
-            for byte_number, byte in enumerate(iterbytes(raw)):
-                if byte < 0x10 and byte_number in [0, 3]:
-                    break
-                if byte_number >= 4:
-                    break
-                bytes[byte_number] = byte
-            if bytes[3]:
-                self._parse_packet(bytes[0:4])
         if self.serial_port:
             self.serial_port.write(END)
 
-    def _parse_packet(self, packet):
+    @staticmethod
+    def _parse_packet(packet):
         keys = []
-        for i, byte in enumerate(packet):
+        # Packet is a byte array with 4 bytes of data
+        for i, byte in enumerate(iterbytes(packet)):
             map = STENO_KEY_CHART[i]
             for i in range(8):
                 if not byte >> i & 1:
                     key = map[-i + 7]
                     if key:
                         keys.append(key)
-        steno_keys = self.keymap.keys_to_actions(keys)
-        if steno_keys:
-            self._notify(steno_keys)
+        return keys
