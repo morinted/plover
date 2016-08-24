@@ -147,6 +147,30 @@
     <string>Ctrl+N</string>
    </property>
   </action>
+  <action name="action_MoveDictionariesUp">
+   <property name="icon">
+    <iconset resource="resources/resources.qrc">
+     <normaloff>:/up.svg</normaloff>:/up.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Move dictionaries &amp;up</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected dictionaries up.</string>
+   </property>
+  </action>
+  <action name="action_MoveDictionariesDown">
+   <property name="icon">
+    <iconset resource="resources/resources.qrc">
+     <normaloff>:/down.svg</normaloff>:/down.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Move dictionaries &amp;down</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected dictionaries down.</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="5" margin="8"/>
  <resources>
@@ -265,6 +289,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>action_MoveDictionariesDown</sender>
+   <signal>triggered()</signal>
+   <receiver>DictionariesWidget</receiver>
+   <slot>on_move_dictionaries_down()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>182</x>
+     <y>118</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>action_MoveDictionariesUp</sender>
+   <signal>triggered()</signal>
+   <receiver>DictionariesWidget</receiver>
+   <slot>on_move_dictionaries_up()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>182</x>
+     <y>118</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>on_selection_changed()</slot>
@@ -274,5 +330,7 @@
   <slot>on_add_dictionaries()</slot>
   <slot>on_add_translation()</slot>
   <slot>on_activate_cell(int,int)</slot>
+  <slot>on_move_dictionaries_up()</slot>
+  <slot>on_move_dictionaries_down()</slot>
  </slots>
 </ui>

@@ -1,7 +1,7 @@
 
 import os
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QItemSelection, QItemSelectionModel, Qt
 from PyQt5.QtWidgets import (
     QFileDialog,
     QTableWidgetItem,
@@ -28,15 +28,21 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
             self.action_Undo,
             self.action_EditDictionaries,
             self.action_RemoveDictionaries,
+            self.action_MoveDictionariesUp,
+            self.action_MoveDictionariesDown,
         ):
             action.setEnabled(False)
         # Toolbar.
         self.layout().addWidget(ToolBar(
             self.action_Undo,
+            None,
             self.action_EditDictionaries,
             self.action_RemoveDictionaries,
             self.action_AddDictionaries,
             self.action_AddTranslation,
+            None,
+            self.action_MoveDictionariesUp,
+            self.action_MoveDictionariesDown,
         ))
         self.table.supportedDropActions = self._supported_drop_actions
         self.table.dragEnterEvent = self._drag_enter_event
@@ -140,11 +146,28 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
             dest_index += 1
         self._update_dictionaries(dictionaries)
 
+    def _get_selection(self):
+        row_list = [item.row() for item in self.table.selectedItems()]
+        row_list.sort()
+        return row_list
+
+    def _set_selection(self, row_list):
+        selection = QItemSelection()
+        model = self.table.model()
+        for row in row_list:
+            index = self.table.model().index(row, 0)
+            selection.select(index, index)
+        self.table.selectionModel().select(selection, QItemSelectionModel.Rows |
+                                           QItemSelectionModel.ClearAndSelect |
+                                           QItemSelectionModel.Current)
+
     def on_selection_changed(self):
         enabled = bool(self.table.selectedItems())
         for action in (
             self.action_RemoveDictionaries,
             self.action_EditDictionaries,
+            self.action_MoveDictionariesUp,
+            self.action_MoveDictionariesDown,
         ):
             action.setEnabled(enabled)
 
@@ -168,7 +191,7 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         self._edit(dictionaries)
 
     def on_remove_dictionaries(self):
-        selection = [item.row() for item in self.table.selectedItems()]
+        selection = self._get_selection()
         assert selection
         dictionaries = list(self._dictionaries)
         for row in sorted(selection, reverse=True):
@@ -188,10 +211,38 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         self._update_dictionaries(dictionaries)
 
     def on_add_translation(self):
-        selection = [item.row() for item in self.table.selectedItems()]
+        selection = self._get_selection()
         if selection:
             selection.sort()
             dictionary = self._dictionaries[selection[-1]]
         else:
             dictionary = None
         self._engine.command_add_translation.emit(dictionary)
+
+    def on_move_dictionaries_up(self):
+        dictionaries = self._dictionaries[:]
+        selection = []
+        min_row = 0
+        for old_row in self._get_selection():
+            new_row = max(min_row, old_row - 1)
+            dictionaries.insert(new_row, dictionaries.pop(old_row))
+            selection.append(new_row)
+            min_row = new_row + 1
+        if dictionaries == self._dictionaries:
+            return
+        self._update_dictionaries(dictionaries)
+        self._set_selection(selection)
+
+    def on_move_dictionaries_down(self):
+        dictionaries = self._dictionaries[:]
+        selection = []
+        max_row = len(dictionaries) - 1
+        for old_row in reversed(self._get_selection()):
+            new_row = min(max_row, old_row + 1)
+            dictionaries.insert(new_row, dictionaries.pop(old_row))
+            selection.append(new_row)
+            max_row = new_row - 1
+        if dictionaries == self._dictionaries:
+            return
+        self._update_dictionaries(dictionaries)
+        self._set_selection(selection)

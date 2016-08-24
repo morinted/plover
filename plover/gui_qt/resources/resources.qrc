@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>up.svg</file>
+    <file>down.svg</file>
     <file>suggestions.svg</file>
     <file>font.svg</file>
     <file>tape.svg</file>

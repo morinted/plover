@@ -17,7 +17,10 @@ def ToolButton(action):
 def ToolBar(*action_list):
     toolbar = QToolBar()
     for action in action_list:
-        toolbar.addWidget(ToolButton(action))
+        if action is None:
+            toolbar.addSeparator()
+        else:
+            toolbar.addWidget(ToolButton(action))
     return toolbar
 
 
