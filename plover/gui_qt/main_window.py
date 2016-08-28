@@ -89,6 +89,9 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         engine.machine_state_changed.connect(self._trayicon.update_machine_state)
         engine.output_changed.connect(self.on_output_changed)
         self.on_output_changed(engine.output)
+        # Machine combo box.
+        self.machine.addItems(_(machine) for machine in engine.machines)
+        engine.config_changed.connect(self.on_config_changed)
         # Status bar.
         machine_state = QLabel()
         statusbar = self.statusBar()
@@ -106,6 +109,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         engine.load_config()
         # Apply configuration settings.
         config = self._engine.config
+        self.on_config_changed(config)
         self.dictionaries._update_dictionaries(config['dictionary_file_names'],
                                                record=False, save=False,
                                                scroll=True)
@@ -154,6 +158,13 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
 
     def _lookup(self, manage_windows=False):
         self._activate_dialog('lookup', manage_windows=manage_windows)
+
+    def on_config_changed(self, config_update):
+        if 'machine_type' in config_update:
+            self.machine.setCurrentText(config_update['machine_type'])
+
+    def on_machine_changed(self, machine_type):
+        self._engine.config = { 'machine_type': machine_type }
 
     def on_output_changed(self, enabled):
         self._trayicon.update_output(enabled)
