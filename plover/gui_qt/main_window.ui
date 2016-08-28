@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>268</width>
-    <height>294</height>
+    <width>309</width>
+    <height>320</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -41,32 +41,58 @@
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QComboBox" name="machine">
+     <widget class="QGroupBox" name="groupBox">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="title">
+       <string>Machine</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="2" column="0">
+        <widget class="QLabel" name="machine_state">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="reconnect">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Disconnect and reconnect the machine.</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="resources/resources.qrc">
+           <normaloff>:/reconnect.svg</normaloff>:/reconnect.svg</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <widget class="QComboBox" name="machine_type">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
-    <item row="0" column="1">
-     <widget class="QCheckBox" name="output">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Output</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0" colspan="2">
+    <item row="2" column="0" colspan="3">
      <widget class="QScrollArea" name="scroll_area">
       <property name="frameShape">
        <enum>QFrame::Panel</enum>
@@ -79,11 +105,40 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>248</width>
-         <height>176</height>
+         <width>289</width>
+         <height>135</height>
         </rect>
        </property>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QGroupBox" name="groupBox">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="title">
+       <string>Output</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QRadioButton" name="output_enable">
+         <property name="text">
+          <string>Enable</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="output_disable">
+         <property name="text">
+          <string>Disable</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
    </layout>
@@ -93,7 +148,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>268</width>
+     <width>309</width>
      <height>19</height>
     </rect>
    </property>
@@ -134,13 +189,15 @@
    <addaction name="menu_Tools"/>
    <addaction name="menu_Help"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>Plover: Toolbar</string>
    </property>
    <property name="movable">
     <bool>false</bool>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextUnderIcon</enum>
    </property>
    <property name="floatable">
     <bool>false</bool>
@@ -151,7 +208,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_Reconnect"/>
    <addaction name="action_Configure"/>
    <addaction name="action_Lookup"/>
    <addaction name="action_Suggestions"/>
@@ -257,7 +313,7 @@
      <normaloff>:/reconnect.svg</normaloff>:/reconnect.svg</iconset>
    </property>
    <property name="text">
-    <string>R&amp;econnect machine</string>
+    <string>&amp;Reconnect machine</string>
    </property>
    <property name="toolTip">
     <string>Disconnect and reconnect the machine.</string>
@@ -409,22 +465,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>output</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>action_ToggleOutput</receiver>
-   <slot>setChecked(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>124</x>
-     <y>82</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>action_ToggleOutput</sender>
    <signal>triggered(bool)</signal>
    <receiver>MainWindow</receiver>
@@ -436,38 +476,6 @@
     </hint>
     <hint type="destinationlabel">
      <x>124</x>
-     <y>61</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>action_ToggleOutput</sender>
-   <signal>triggered(bool)</signal>
-   <receiver>output</receiver>
-   <slot>setChecked(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>124</x>
-     <y>82</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>output</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_toggle_output(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>128</x>
-     <y>82</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>128</x>
      <y>61</y>
     </hint>
    </hints>
@@ -489,7 +497,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>machine</sender>
+   <sender>machine_type</sender>
    <signal>activated(QString)</signal>
    <receiver>MainWindow</receiver>
    <slot>on_machine_changed(QString)</slot>
@@ -501,6 +509,54 @@
     <hint type="destinationlabel">
      <x>167</x>
      <y>148</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>output_disable</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_disable_output()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>139</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
+     <y>159</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>output_enable</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_enable_output()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>114</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
+     <y>159</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>reconnect</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_reconnect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>171</x>
+     <y>143</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
+     <y>159</y>
     </hint>
    </hints>
   </connection>
@@ -518,5 +574,7 @@
   <slot>on_about()</slot>
   <slot>on_show_hide()</slot>
   <slot>on_machine_changed(QString)</slot>
+  <slot>on_enable_output()</slot>
+  <slot>on_disable_output()</slot>
  </slots>
 </ui>

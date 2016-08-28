@@ -89,17 +89,13 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         engine.machine_state_changed.connect(self._trayicon.update_machine_state)
         engine.output_changed.connect(self.on_output_changed)
         self.on_output_changed(engine.output)
-        # Machine combo box.
-        self.machine.addItems(_(machine) for machine in engine.machines)
+        # Machine.
+        self.machine_type.addItems(_(machine) for machine in engine.machines)
         engine.config_changed.connect(self.on_config_changed)
-        # Status bar.
-        machine_state = QLabel()
-        statusbar = self.statusBar()
-        statusbar.addWidget(machine_state)
         engine.machine_state_changed.connect(
-            lambda machine, state: machine_state.setText(
-                _('{machine} is {state}').format(machine=_(machine), state=_(state))
-        ))
+            lambda machine, state:
+            self.machine_state.setText(_(state.capitalize()))
+        )
         self.restore_state()
         # Commands.
         engine.command_add_translation.connect(partial(self._add_translation, manage_windows=True))
@@ -161,18 +157,25 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
 
     def on_config_changed(self, config_update):
         if 'machine_type' in config_update:
-            self.machine.setCurrentText(config_update['machine_type'])
+            self.machine_type.setCurrentText(config_update['machine_type'])
 
     def on_machine_changed(self, machine_type):
         self._engine.config = { 'machine_type': machine_type }
 
     def on_output_changed(self, enabled):
         self._trayicon.update_output(enabled)
-        self.output.setChecked(enabled)
+        self.output_enable.setChecked(enabled)
+        self.output_disable.setChecked(not enabled)
         self.action_ToggleOutput.setChecked(enabled)
 
     def on_toggle_output(self, enabled):
         self._engine.output = enabled
+
+    def on_enable_output(self):
+        self.on_toggle_output(True)
+
+    def on_disable_output(self):
+        self.on_toggle_output(False)
 
     def on_configure(self):
         self._configure()
