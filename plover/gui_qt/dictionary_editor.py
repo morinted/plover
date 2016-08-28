@@ -1,4 +1,5 @@
 
+from operator import attrgetter, itemgetter
 from collections import namedtuple
 from itertools import chain
 
@@ -24,7 +25,11 @@ from plover.gui_qt.dictionary_editor_ui import Ui_DictionaryEditor
 from plover.gui_qt.utils import ToolBar, WindowState
 
 
-DictionaryItem = namedtuple('DictionaryItem', 'strokes translation dictionary')
+class DictionaryItem(namedtuple('DictionaryItem', 'strokes translation dictionary')):
+
+    @property
+    def dictionary_path(self):
+        return self.dictionary.get_path()
 
 
 class DictionaryItemDelegate(QStyledItemDelegate):
@@ -183,7 +188,11 @@ class DictionaryItemModel(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self._entries.sort(key=lambda i: i[column],
+        if column == 2:
+            key = attrgetter('dictionary_path')
+        else:
+            key = itemgetter(column)
+        self._entries.sort(key=key,
                            reverse=(order == Qt.DescendingOrder))
         self._sort_column = column
         self._sort_order = order
