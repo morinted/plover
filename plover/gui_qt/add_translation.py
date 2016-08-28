@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QDialog,
 )
 
+from plover.misc import expand_path, shorten_path
 from plover.steno import normalize_steno
 from plover.translation import escape_translation, unescape_translation
 
@@ -25,7 +26,7 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         self.setupUi(self)
         self._engine = engine
         dictionaries = [d.get_path() for d in engine.dictionaries.dicts]
-        self.dictionary.addItems(dictionaries)
+        self.dictionary.addItems(shorten_path(d) for d in dictionaries)
         if dictionary is None:
             self.dictionary.setCurrentIndex(0)
         else:
@@ -163,7 +164,7 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         strokes = self._strokes()
         translation = self._translation()
         if strokes and translation:
-            dictionary = self.dictionary.currentText()
+            dictionary = expand_path(self.dictionary.currentText())
             self._engine.add_translation(strokes, translation,
                                          dictionary=dictionary)
         super(AddTranslation, self).accept()

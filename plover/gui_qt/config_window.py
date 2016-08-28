@@ -26,6 +26,7 @@ from serial import Serial
 from serial.tools.list_ports import comports
 
 from plover.config import MINIMUM_OUTPUT_CONFIG_UNDO_LEVELS
+from plover.misc import expand_path, shorten_path
 from plover import system
 
 from plover.gui_qt.config_window_ui import Ui_ConfigWindow
@@ -103,7 +104,7 @@ class FileOption(QWidget, Ui_FileWidget):
         self.setupUi(self)
 
     def setValue(self, value):
-        self.path.setText(value)
+        self.path.setText(shorten_path(value))
 
     def on_browse(self):
         filename_suggestion = self.path.text()
@@ -114,11 +115,11 @@ class FileOption(QWidget, Ui_FileWidget):
         )[0]
         if not filename:
             return
-        self.path.setText(filename)
+        self.path.setText(shorten_path(filename))
         self.valueChanged.emit(filename)
 
     def on_path_edited(self):
-        self.valueChanged.emit(self.path.text())
+        self.valueChanged.emit(expand_path(self.path.text()))
 
 
 class KeyboardOption(QWidget, Ui_KeyboardWidget):

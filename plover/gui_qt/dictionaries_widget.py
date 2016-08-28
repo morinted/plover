@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 )
 
 from plover.dictionary.base import dictionaries as dictionary_formats
-from plover.oslayer.config import CONFIG_DIR
+from plover.misc import shorten_path
 
 from plover.gui_qt.dictionaries_widget_ui import Ui_DictionariesWidget
 from plover.gui_qt.dictionary_editor import DictionaryEditor
@@ -49,18 +49,6 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         self.table.dragMoveEvent = self._drag_move_event
         self.table.dropEvent = self._drop_event
 
-    @staticmethod
-    def _display_filename(filename):
-        config_dir = os.path.realpath(CONFIG_DIR)
-        if not config_dir.endswith(os.sep):
-            config_dir += os.sep
-        if filename.startswith(config_dir):
-            return filename[len(config_dir):]
-        home_dir = os.path.expanduser('~/')
-        if filename.startswith(home_dir):
-            return '~/' + filename[len(home_dir):]
-        return filename
-
     def _update_dictionaries(self, dictionaries,
                              record=True, save=True,
                              scroll=False):
@@ -76,7 +64,7 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         item = None
         for row, filename in enumerate(dictionaries):
             self.table.insertRow(row)
-            item = QTableWidgetItem(self._display_filename(filename))
+            item = QTableWidgetItem(shorten_path(filename))
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
             self.table.setItem(row, 0, item)
         if scroll and item is not None:
