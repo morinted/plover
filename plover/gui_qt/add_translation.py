@@ -57,8 +57,7 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
     def eventFilter(self, watched, event):
         if watched == self and event.type() == QEvent.ActivationChange:
             if not self.isActiveWindow():
-                self._unfocus_strokes()
-                self._unfocus_translation()
+                self._unfocus()
             return False
         if event.type() != QEvent.FocusIn:
             return False
@@ -86,6 +85,10 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         escaped = value.replace('\\\\', '').replace('\\{', '')
         special = '{#'  in escaped or '{PLOVER:' in escaped
         return not special
+
+    def _unfocus(self):
+        self._unfocus_strokes()
+        self._unfocus_translation()
 
     def _focus_strokes(self):
         if self._focus == 'strokes':
@@ -161,6 +164,7 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         self.translation_info.setText(info)
 
     def accept(self):
+        self._unfocus()
         strokes = self._strokes()
         translation = self._translation()
         if strokes and translation:
@@ -170,5 +174,6 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
         super(AddTranslation, self).accept()
 
     def reject(self):
+        self._unfocus()
         self._set_engine_state(self._original_state)
         super(AddTranslation, self).reject()
