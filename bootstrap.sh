@@ -140,6 +140,7 @@ python2-wheel
 python2-xlib
 )
 arch_python2_extra_packages=(
+base-devel
 python2-pyqt5
 wmctrl
 )
