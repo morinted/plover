@@ -19,6 +19,8 @@ STENO_KEY_CHART = (('^', '#', 'S-', 'T-', 'K-', 'P-'),
 VENDOR_ID = 0x112b
 MAX_OFFSET = 0xFFFFFFFF
 HEADER_BYTES = 32
+PACKET_ERROR = 0x06
+READ_BYTES = 0x13
 
 if sys.platform.startswith('win32'):
     from ctypes import *
@@ -67,8 +69,6 @@ if sys.platform.startswith('win32'):
     # USB Writer 'defines'
     INVALID_HANDLE_VALUE = -1
     ERROR_INSUFFICIENT_BUFFER = 122
-    PACKET_ERROR = 0x06
-    READ_BYTES = 0x13
     STENO_USB_WRITER_RESET_PORT = 1
     USB_NO_RESPONSE = -9
     RT_FILE_ENDED_ON_WRITER = -8
@@ -263,7 +263,7 @@ else:
             self._packet = bytearray(
                 [0x53, 0x47,  # SG → sync (static)
                  0, 0, 0, 0,  # Sequence number
-                 0x13, 0,  # Action (static)
+                 READ_BYTES, 0,  # Action (static)
                  0, 0, 0, 0,  # Data length
                  0, 0, 0, 0,  # File offset
                  0x08, 0, 0, 0,  # Requested byte count (static)
@@ -319,8 +319,12 @@ else:
                 raise IOError('Machine read or write failed')
             else:
                 if response and len(response) > HEADER_BYTES:
-                    self._file_offset += len(response) - HEADER_BYTES
-                    return response[HEADER_BYTES:]
+                    writer_action = response[6]
+                    if writer_action == PACKET_ERROR:
+                        raise EOFError('No open file on writer, open file and reconnect')
+                    elif writer_action == READ_BYTES:
+                        self._file_offset += len(response) - HEADER_BYTES
+                        return response[HEADER_BYTES:]
                 return response
     StenographMachine = LibUSBStenographMachine
 
