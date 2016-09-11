@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016 Ted Morin
+# Copyright (c) 2016 Ted Morin & Keith McReady
 # See LICENSE.txt for details.
 
 "Thread-based monitoring of the stenograph machine."
 
 import sys
-from usb import core, util
 from time import sleep
 from plover import log
 from plover.machine.base import ThreadedStenotypeBase
@@ -62,13 +61,15 @@ if sys.platform.startswith('win32'):
     CreateFile = windll.kernel32.CreateFileA
     ReadFile = windll.kernel32.ReadFile
     WriteFile = windll.kernel32.WriteFile
+    DeviceIoControl = windll.kernel32.DeviceIoControl
     GetLastError = windll.kernel32.GetLastError
 
     # USB Writer 'defines'
     INVALID_HANDLE_VALUE = -1
     ERROR_INSUFFICIENT_BUFFER = 122
-    c_pktError  = 0x06
-    c_pktReadBytes = 0x13
+    PACKET_ERROR = 0x06
+    READ_BYTES = 0x13
+    STENO_USB_WRITER_RESET_PORT = 1
     USB_NO_RESPONSE = -9
     RT_FILE_ENDED_ON_WRITER = -8
 
@@ -80,6 +81,7 @@ if sys.platform.startswith('win32'):
 
             self._sequence_number = 0
             self._file_offset = 0
+            self._connected = False
             self._usb_device = HANDLE(0)
 
         @staticmethod
@@ -88,6 +90,8 @@ if sys.platform.startswith('win32'):
             dev_interface_data.cbSize=sizeof(dev_interface_data)
 
             status = SetupDiEnumDeviceInterfaces(hdevinfo, None, guid.bytes, 0, byref(dev_interface_data))
+            print('dev interface data', dev_interface_data)
+            print('status', status)
             if status == 0:
                 return INVALID_HANDLE_VALUE
 
@@ -102,6 +106,7 @@ if sys.platform.startswith('win32'):
                 None
             )
             error = GetLastError()
+            print('last error', error)
             if error != ERROR_INSUFFICIENT_BUFFER:
                 return INVALID_HANDLE_VALUE
 
@@ -117,31 +122,35 @@ if sys.platform.startswith('win32'):
                 hdevinfo, byref(dev_interface_data), byref(dev_detail_data), req,
                 pointer(reqlength), None
             )
-
+            print('status 2', status)
             if not status:
                 return INVALID_HANDLE_VALUE
 
+            print('dev path?!', dev_detail_data.DevicePath)
             hdevhandle = CreateFile(
                 dev_detail_data.DevicePath,
                 0xC0000000, 0x3, 0, 0x3, 0x80, 0
             )
+
             return hdevhandle
 
         @staticmethod
         def _open_device_by_class_interface_and_instance(classguid): #returns a handle to the writer opened with CreateFile
             # SetupDiGetClassDevs(pClassGuid, NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
             hdevinfo = SetupDiGetClassDevs(classguid.bytes, 0, 0, 0x12)
+            print('hwdevinfo', hdevinfo)
             if hdevinfo == INVALID_HANDLE_VALUE:
                 return INVALID_HANDLE_VALUE
 
             usb_device = WindowsStenographMachine._open_device_instance(hdevinfo, classguid)
+            print('usb device:', usb_device)
             return usb_device
 
         def _usb_write_packet(self):
             self._host_packet.SyncSeqType[0] = ord('S')
             self._host_packet.SyncSeqType[1] = ord('G')
             self._host_packet.SyncSeqType[2] = self._sequence_number % 255
-            self._host_packet.SyncSeqType[6] = c_pktReadBytes
+            self._host_packet.SyncSeqType[6] = READ_BYTES
             if self._usb_device == INVALID_HANDLE_VALUE:  # device not opened yet
                 return 0
             bytes_written = DWORD(0)
@@ -160,13 +169,10 @@ if sys.platform.startswith('win32'):
 
             return bytes_written.value
 
-        def _usb_read_packet(self): # //this is a "give me everything you have" kind of function - the header will tell us how much is valid
-          if self._usb_device == INVALID_HANDLE_VALUE: # device not opened yet
-            # print "NoWriter"
-            return 0
+        def _usb_read_packet(self):
+          assert self._usb_device != INVALID_HANDLE_VALUE, 'device isn\'t open'
 
           bytes_read = DWORD(0)
-
           # Always read this maximum amount.
           # The header will tell me how much to pay attention to.
           ReadFile(
@@ -183,7 +189,7 @@ if sys.platform.startswith('win32'):
           return 32 + self._writer_packet.uiDataLen
 
         def _read_steno(self):
-            self._host_packet.SyncSeqType[6] = c_pktReadBytes
+            self._host_packet.SyncSeqType[6] = READ_BYTES
             self._host_packet.uiDataLen = 0
             self._host_packet.uiParam3 = 0
             self._host_packet.uiParam4 = 0
@@ -191,12 +197,13 @@ if sys.platform.startswith('win32'):
             self._host_packet.uiFileOffset = self._file_offset
             self._host_packet.uiByteCount = 512
             if self._usb_write_packet() == 0:
-                return USB_NO_RESPONSE  # I couldn't write any bytes to the writer - is the USB still connected?
+                return USB_NO_RESPONSE
 
             # listen for response
             amount_read = self._usb_read_packet()
 
             if amount_read > 0:
+                print('amount read is', amount_read)
                 amount_read -= 32 # remove the header portion so I know how much data there is
             else:
                 return USB_NO_RESPONSE  # No bytes, is it still connected?
@@ -205,15 +212,20 @@ if sys.platform.startswith('win32'):
             if self._writer_packet.SyncSeqType[2] == self._host_packet.SyncSeqType[2]:
                 self._sequence_number += 1
 
-                if self._writer_packet.SyncSeqType[6] == c_pktReadBytes:
+                if self._writer_packet.SyncSeqType[6] == READ_BYTES:
                     return self._writer_packet.uiDataLen
                 else:
                     # Could check the error code for more specific errors here
-                    if self._writer_packet.SyncSeqType[6] == c_pktError:
+                    if self._writer_packet.SyncSeqType[6] == PACKET_ERROR:
                         return RT_FILE_ENDED_ON_WRITER
             else:
                 self._usb_read_packet() # toss out any junk
-                return USB_NO_RESPONSE  # I couldn't read any bytes from the writer - is the USB still connected?
+                return USB_NO_RESPONSE
+
+        def _reset_port(self):
+            bytes_returned = DWORD(0)
+            DeviceIoControl(self._usb_device, STENO_USB_WRITER_RESET_PORT,
+                            None, 0, None, 0, byref(bytes_returned), None)
 
         def connect(self):
             self._file_offset = 0
@@ -222,23 +234,26 @@ if sys.platform.startswith('win32'):
 
         def read(self):
             result = self._read_steno()
+            print('result --', result)
+            sys.stdout.flush()
             if result > 0:  # Got one or more steno strokes
+                print('got something:', result)
+                sys.stdout.flush()
                 self._file_offset += result
-                # Data can be many strokes -- we will just send the latest one.
-                # This is all that is useful in realtime.
-                # If we want to support reading back files, then don't do this:
-                return self._writer_packet.data[-8:-4]
+                return self._writer_packet.data
             elif not result:
-                return None
+                return []
             elif result == RT_FILE_ENDED_ON_WRITER:
-                print('Realtime Ended')  # TODO: handle realtime ended
+                raise EOFError('No open file on writer, open file and reconnect')
             elif result == USB_NO_RESPONSE:
-                print('No response :(')
-                # No USB communiucation with the writer.
-                # We should assume that it has only gone away temporarily.
-                pass
+                # Reset the port
+                self._reset_port()
+                # Prompt a reconnect
+                raise IOError('No response from Stenograph device')
     StenographMachine = WindowsStenographMachine
 else:
+    from usb import core, util
+
     class LibUSBStenographMachine(object):
         def __init__(self):
             self._endpoint_in = None
@@ -261,8 +276,12 @@ else:
 
         def connect(self):
             self._connected = False
+            self._file_offset = 0
             try:
                 dev = core.find(idVendor=VENDOR_ID)
+            except ValueError:
+                log.warning('libusb must be installed for Plover to interface with Stenograph machines.')
+            else:
                 if dev is None:
                     raise ValueError('Device not found')
                 dev.set_configuration()
@@ -284,24 +303,27 @@ else:
                             util.ENDPOINT_IN)
                 assert self._endpoint_in is not None
                 self._connected = True
-            except ValueError:
-                log.warning('libusb must be installed for Plover to interface with Stenograph machines.')
             return self._connected
 
         def read(self):
-            if not self._connected:
-                IOError('Can\' read: Stenograph not connected')
+            assert self._connected, 'cannot read from machine if not connected'
             self._sequence_number = (self._sequence_number + 1) % MAX_OFFSET
             for i in range(4):
                 self._packet[2 + i] = self._sequence_number >> 8 * i & 255
             for i in range(4):
                 self._packet[12 + i] = self._file_offset >> 8 * i & 255
-            self._endpoint_out.write(self._packet)
-            response = self._endpoint_in.read(128, 3000)
-            if response and len(response) > HEADER_BYTES:
-                self._file_offset += len(response) - HEADER_BYTES
-            return response
+            try:
+                self._endpoint_out.write(self._packet)
+                response = self._endpoint_in.read(128, 3000)
+            except core.USBError as e:
+                raise IOError('Machine read or write failed')
+            else:
+                if response and len(response) > HEADER_BYTES:
+                    self._file_offset += len(response) - HEADER_BYTES
+                    return response[HEADER_BYTES:]
+                return response
     StenographMachine = LibUSBStenographMachine
+
 
 class Stenograph(ThreadedStenotypeBase):
 
@@ -333,6 +355,7 @@ class Stenograph(ThreadedStenotypeBase):
     def _reconnect(self):
         self._initializing()
         connected = self._machine.connect()
+        print('connected is', connected)
         # Reconnect loop
         while not self.finished.isSet() and not connected:
             sleep(0.5)
@@ -342,30 +365,34 @@ class Stenograph(ThreadedStenotypeBase):
     def run(self):
         self._ready()
         realtime = False
-
         while not self.finished.isSet():
+            sys.stdout.flush()
             try:
                 response = self._machine.read()
-            except core.USBError as e:
-                if e.errno == 19:
-                    log.warning(u'Stenograph machine disconnected, reconnecting…')
-                    if self._reconnect():
-                        log.warning('Stenograph reconnected.')
-                        self._ready()
+            except IOError as e:
+                log.warning(u'Stenograph machine disconnected, reconnecting…')
+                log.debug('Stenograph exception: %s', str(e))
+                realtime = False
+                sleep(0.5)
+                if self._reconnect():
+                    log.warning('Stenograph reconnected.')
+                    self._ready()
+            except EOFError as e:
+                self._error()
+                log.warning('Stenograph disconnected: %s', e)
             else:
                 if response is None:
-                    pass
-                response_size = len(response)
-                steno_size = response_size - HEADER_BYTES
-                if not realtime and steno_size <= 0:
+                    continue
+                content = len(response) > 0
+                if not realtime and not content:
+                    print('realtime found')
                     # Wait for a packet with no data before we are realtime.
                     realtime = True
-                elif realtime and steno_size > 0:
-                    keys = Stenograph.process_steno_packet(
-                        response[HEADER_BYTES:HEADER_BYTES + 4]
-                    )
-                    if keys:
-                        self._on_stroke(keys)
+                elif realtime and content:
+                    chords = Stenograph.process_steno_packet(response)
+                    for keys in chords:
+                        if keys:
+                            self._on_stroke(keys)
 
     def stop_capture(self):
         """Stop listening for output from the stenotype machine."""
@@ -375,12 +402,34 @@ class Stenograph(ThreadedStenotypeBase):
 
     @staticmethod
     def process_steno_packet(steno):
-        keys = []
-        for byte_number, byte in enumerate(steno):
-            byte_keys = STENO_KEY_CHART[byte_number]
-            for i in range(6):
-                if (byte >> i) & 1:
-                    key = byte_keys[-i + 5]
-                    if key:
-                        keys.append(key)
-        return keys
+        # Expecting 8 byte chords.
+        # Bytes 0-3 are steno, 4-7 are timestamp.
+        chords = []
+        for chord_index in range(len(steno) // 8):
+            keys = []
+            chord = steno[chord_index * 8: chord_index * 8 + 4]
+            for byte_number, byte in enumerate(chord):
+                if byte is None:
+                    continue
+                byte_keys = STENO_KEY_CHART[byte_number]
+                for i in range(6):
+                    if (byte >> i) & 1:
+                        key = byte_keys[-i + 5]
+                        if key:
+                            keys.append(key)
+            if keys:
+                chords.append(keys)
+        return chords
+
+if __name__ == '__main__':
+    print(Stenograph.process_steno_packet(
+        [255, 255, 255, 255, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 0, 0, 0,
+         None, None, None, None, None, None, None, None,
+         0b11000000, 0b11000000, 0b11000000, 0b11000000, 255, 255, 255, 255,
+         0b11000001, 0b11000000, 0b11000000, 0b11000000, 255, 255, 255, 255,
+         0b11000000, 0b11100001, 0b11000000, 0b11000000, 255, 255, 255, 255,
+         0b11000001, 0b11000000, 0b11100001, 0b11000000, 255, 255, 255, 255,
+         0b11100000, 0b11000000, 0b11000000, 0b11100001, 255, 255, 255, 255,
+         ]
+    ))
