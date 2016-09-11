@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016 Ted Morin & Keith McReady
+# Copyright (c) 2016 Ted Morin & Keith McCready
 # See LICENSE.txt for details.
 
 "Thread-based monitoring of the stenograph machine."
