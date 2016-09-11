@@ -313,7 +313,7 @@ class Stenograph(ThreadedStenotypeBase):
         ^
     '''
 
-    def __init__(self):
+    def __init__(self, params):
         super(Stenograph, self).__init__()
         self._machine = StenographMachine()
 
@@ -351,6 +351,7 @@ class Stenograph(ThreadedStenotypeBase):
                     log.warning(u'Stenograph machine disconnected, reconnecting…')
                     if self._reconnect():
                         log.warning('Stenograph reconnected.')
+                        self._ready()
             else:
                 if response is None:
                     pass
@@ -373,7 +374,7 @@ class Stenograph(ThreadedStenotypeBase):
         self._stopped()
 
     @staticmethod
-    def process_steno_packet(self, steno):
+    def process_steno_packet(steno):
         keys = []
         for byte_number, byte in enumerate(steno):
             byte_keys = STENO_KEY_CHART[byte_number]
