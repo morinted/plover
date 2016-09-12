@@ -242,7 +242,7 @@ if sys.platform.startswith('win32'):
             elif not result:
                 return []
             elif result == RT_FILE_ENDED_ON_WRITER:
-                self._disconnect()
+                self._file_offset = 0
                 raise EOFError('No open file on writer, open file and reconnect')
             elif result == USB_NO_RESPONSE:
                 # Reset the port
@@ -320,6 +320,7 @@ else:
                 if response and len(response) > HEADER_BYTES:
                     writer_action = response[6]
                     if writer_action == PACKET_ERROR:
+                        self._file_offset = 0
                         raise EOFError('No open file on writer, open file and reconnect')
                     elif writer_action == READ_BYTES:
                         self._file_offset += len(response) - HEADER_BYTES
@@ -381,8 +382,8 @@ class Stenograph(ThreadedStenotypeBase):
                     log.warning('Stenograph reconnected.')
                     self._ready()
             except EOFError as e:
-                self._error()
-                log.warning('Stenograph disconnected: %s', e)
+                realtime = False
+                # File ended -- will resume normal operation after new file
             else:
                 if response is None:
                     continue
