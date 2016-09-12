@@ -63,13 +63,12 @@ if sys.platform.startswith('win32'):
     CreateFile = windll.kernel32.CreateFileA
     ReadFile = windll.kernel32.ReadFile
     WriteFile = windll.kernel32.WriteFile
-    DeviceIoControl = windll.kernel32.DeviceIoControl
+    CloseHandle = windll.kernel32.CloseHandle
     GetLastError = windll.kernel32.GetLastError
 
     # USB Writer 'defines'
     INVALID_HANDLE_VALUE = -1
     ERROR_INSUFFICIENT_BUFFER = 122
-    STENO_USB_WRITER_RESET_PORT = 1
     USB_NO_RESPONSE = -9
     RT_FILE_ENDED_ON_WRITER = -8
 
@@ -222,10 +221,9 @@ if sys.platform.startswith('win32'):
                 self._usb_read_packet() # toss out any junk
                 return USB_NO_RESPONSE
 
-        def _reset_port(self):
-            bytes_returned = DWORD(0)
-            DeviceIoControl(self._usb_device, STENO_USB_WRITER_RESET_PORT,
-                            None, 0, None, 0, byref(bytes_returned), None)
+        def _disconnect(self):
+            CloseHandle(self._usb_device)
+            self._usb_device = INVALID_HANDLE_VALUE
 
         def connect(self):
             self._file_offset = 0
@@ -244,10 +242,11 @@ if sys.platform.startswith('win32'):
             elif not result:
                 return []
             elif result == RT_FILE_ENDED_ON_WRITER:
+                self._disconnect()
                 raise EOFError('No open file on writer, open file and reconnect')
             elif result == USB_NO_RESPONSE:
                 # Reset the port
-                self._reset_port()
+                self._disconnect()
                 # Prompt a reconnect
                 raise IOError('No response from Stenograph device')
     StenographMachine = WindowsStenographMachine
