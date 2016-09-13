@@ -238,7 +238,7 @@ if sys.platform.startswith('win32'):
                 print('got something:', result)
                 sys.stdout.flush()
                 self._file_offset += result
-                return self._writer_packet.data
+                return self._writer_packet.data[:result]
             elif not result:
                 return []
             elif result == RT_FILE_ENDED_ON_WRITER:
