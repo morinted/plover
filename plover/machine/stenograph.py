@@ -317,8 +317,10 @@ else:
             except core.USBError as e:
                 raise IOError('Machine read or write failed')
             else:
-                if response and len(response) > HEADER_BYTES:
+                if response and len(response) >= HEADER_BYTES:
+                    print(response[:10])
                     writer_action = response[6]
+                    print('writer action', writer_action)
                     if writer_action == PACKET_ERROR:
                         self._file_offset = 0
                         raise EOFError('No open file on writer, open file and reconnect')
