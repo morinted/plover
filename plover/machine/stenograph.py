@@ -79,7 +79,6 @@ if sys.platform.startswith('win32'):
             self._writer_packet = USB_Packet()
 
             self._sequence_number = 0
-            self._file_offset = 0
             self._connected = False
             self._usb_device = HANDLE(0)
 
@@ -187,13 +186,13 @@ if sys.platform.startswith('win32'):
             return 0
           return 32 + self._writer_packet.uiDataLen
 
-        def _read_steno(self):
+        def _read_steno(self, file_offset):
             self._host_packet.SyncSeqType[6] = READ_BYTES
             self._host_packet.uiDataLen = 0
             self._host_packet.uiParam3 = 0
             self._host_packet.uiParam4 = 0
             self._host_packet.uiParam5 = 0
-            self._host_packet.uiFileOffset = self._file_offset
+            self._host_packet.uiFileOffset = file_offset
             self._host_packet.uiByteCount = 512
             if self._usb_write_packet() == 0:
                 return USB_NO_RESPONSE
@@ -221,32 +220,30 @@ if sys.platform.startswith('win32'):
                 self._usb_read_packet() # toss out any junk
                 return USB_NO_RESPONSE
 
-        def _disconnect(self):
+        def disconnect(self):
             CloseHandle(self._usb_device)
             self._usb_device = INVALID_HANDLE_VALUE
 
         def connect(self):
-            self._file_offset = 0
+            # If already connected, disconnect first.
+            if self._usb_device != INVALID_HANDLE_VALUE:
+                self.disconnect()
             self._usb_device = self._open_device_by_class_interface_and_instance(USB_WRITER_GUID)
             return self._usb_device != INVALID_HANDLE_VALUE
 
-        def read(self):
-            result = self._read_steno()
+        def read(self, file_offset):
+            result = self._read_steno(file_offset)
             print('result --', result)
             sys.stdout.flush()
             if result > 0:  # Got one or more steno strokes
                 print('got something:', result)
                 sys.stdout.flush()
-                self._file_offset += result
                 return self._writer_packet.data[:result]
             elif not result:
                 return []
             elif result == RT_FILE_ENDED_ON_WRITER:
-                self._file_offset = 0
                 raise EOFError('No open file on writer, open file and reconnect')
             elif result == USB_NO_RESPONSE:
-                # Reset the port
-                self._disconnect()
                 # Prompt a reconnect
                 raise IOError('No response from Stenograph device')
     StenographMachine = WindowsStenographMachine
@@ -257,7 +254,6 @@ else:
         def __init__(self):
             self._endpoint_in = None
             self._endpoint_out = None
-            self._file_offset = 0
             self._sequence_number = 0
             self._packet = bytearray(
                 [0x53, 0x47,  # SG → sync (static)
@@ -274,8 +270,7 @@ else:
             self._connected = False
 
         def connect(self):
-            self._connected = False
-            self._file_offset = 0
+            self.disconnect()
             try:
                 dev = core.find(idVendor=VENDOR_ID)
             except ValueError:
@@ -304,13 +299,18 @@ else:
                 self._connected = True
             return self._connected
 
-        def read(self):
+        def disconnect(self):
+            self._connected = False
+            self._endpoint_in = None
+            self._endpoint_out = None
+
+        def read(self, file_offset):
             assert self._connected, 'cannot read from machine if not connected'
             self._sequence_number = (self._sequence_number + 1) % MAX_OFFSET
             for i in range(4):
                 self._packet[2 + i] = self._sequence_number >> 8 * i & 255
             for i in range(4):
-                self._packet[12 + i] = self._file_offset >> 8 * i & 255
+                self._packet[12 + i] = file_offset >> 8 * i & 255
             try:
                 self._endpoint_out.write(self._packet)
                 response = self._endpoint_in.read(128, 3000)
@@ -322,10 +322,8 @@ else:
                     writer_action = response[6]
                     print('writer action', writer_action)
                     if writer_action == PACKET_ERROR:
-                        self._file_offset = 0
                         raise EOFError('No open file on writer, open file and reconnect')
                     elif writer_action == READ_BYTES:
-                        self._file_offset += len(response) - HEADER_BYTES
                         return response[HEADER_BYTES:]
                 return response
     StenographMachine = LibUSBStenographMachine
@@ -371,34 +369,40 @@ class Stenograph(ThreadedStenotypeBase):
     def run(self):
         self._ready()
         realtime = False
+        file_offset = 0
         while not self.finished.isSet():
             sys.stdout.flush()
             try:
-                response = self._machine.read()
+                response = self._machine.read(file_offset)
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
                 log.debug('Stenograph exception: %s', str(e))
                 realtime = False
+                file_offset = 0
                 sleep(0.5)
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
                     self._ready()
             except EOFError as e:
-                realtime = False
+                print('FILE ENDED ON WRITER')
                 # File ended -- will resume normal operation after new file
+                file_offset = 0
+                realtime = False
             else:
                 if response is None:
                     continue
                 content = len(response) > 0
+                file_offset += len(response)
                 if not realtime and not content:
-                    print('realtime found')
                     # Wait for a packet with no data before we are realtime.
+                    print('REALTIME FOUND')
                     realtime = True
                 elif realtime and content:
                     chords = Stenograph.process_steno_packet(response)
                     for keys in chords:
                         if keys:
                             self._on_stroke(keys)
+        self._machine.disconnect()
 
     def stop_capture(self):
         """Stop listening for output from the stenotype machine."""
