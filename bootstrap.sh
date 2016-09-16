@@ -132,6 +132,7 @@ python2-pip
 python2-pyserial
 python2-pytest
 python2-setuptools
+python2-setuptools-scm
 python2-six
 python2-wheel
 python2-xlib
@@ -150,6 +151,7 @@ python-pip
 python-pyserial
 python-pytest
 python-setuptools
+python-setuptools-scm
 python-six
 python-wheel
 python-xlib
@@ -187,6 +189,7 @@ python-pkg-resources
 python-pytest
 python-serial
 python-setuptools
+python-setuptools-scm
 python-six
 python-wheel
 python-xlib
@@ -209,6 +212,7 @@ python3-pkg-resources
 python3-pytest
 python3-serial
 python3-setuptools
+python3-setuptools-scm
 python3-six
 python3-wheel
 python3-xlib
