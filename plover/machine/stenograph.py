@@ -261,7 +261,7 @@ else:
                  READ_BYTES, 0,  # Action (static)
                  0, 0, 0, 0,  # Data length
                  0, 0, 0, 0,  # File offset
-                 0x08, 0, 0, 0,  # Requested byte count (static)
+                 0, 0x02, 0, 0,  # Requested byte count (static 512)
                  0, 0, 0, 0,  # Parameter 3
                  0, 0, 0, 0,  # Parameter 4
                  0, 0, 0, 0,  # Parameter 5
@@ -313,7 +313,7 @@ else:
                 self._packet[12 + i] = file_offset >> 8 * i & 255
             try:
                 self._endpoint_out.write(self._packet)
-                response = self._endpoint_in.read(128, 3000)
+                response = self._endpoint_in.read(1024, 3000)
             except core.USBError as e:
                 raise IOError('Machine read or write failed')
             else:
@@ -368,7 +368,29 @@ class Stenograph(ThreadedStenotypeBase):
 
     def run(self):
         self._ready()
+        """
+        Stenograph writers have "files" which are indexed from 0.
+        Each line is a stroke. When the machine is connected, we
+        don't know what stroke the stenographer is on. We can't
+        assume zero because there may already be content from before.
+        Strategy is to read up the indexes until we reach zero. Then,
+        we consider ourselves "realtime" and further data should be
+        interpreted.
+        """
         realtime = False
+        """
+        There is a bug in the stenograph firmware. After the steno
+        "file" is closed on the machine, we receive a flag to tell us.
+        However, straight after we start receiving 0 length responses,
+        which are the same format as what we'd usually use to tell whether
+        the machine is in realtime or not. If the stenographer opens a file
+        that has previous content in it, we will then blurt out all that content.
+        The strategy here is to take note of the first response that is exactly
+        8 bytes -- a single stroke -- before beginning output. Combined with the
+        0 length stroke check, hopefully we will not accidentally read back and
+        blurt an entire steno file."""
+        read_exactly_8 = False
+
         file_offset = 0
         while not self.finished.isSet():
             sys.stdout.flush()
@@ -388,16 +410,19 @@ class Stenograph(ThreadedStenotypeBase):
                 # File ended -- will resume normal operation after new file
                 file_offset = 0
                 realtime = False
+                read_exactly_8 = False
             else:
                 if response is None:
                     continue
+                if not read_exactly_8 and len(response) == 8:
+                    read_exactly_8 = True
                 content = len(response) > 0
                 file_offset += len(response)
                 if not realtime and not content:
                     # Wait for a packet with no data before we are realtime.
                     print('REALTIME FOUND')
                     realtime = True
-                elif realtime and content:
+                elif realtime and content and read_exactly_8:
                     chords = Stenograph.process_steno_packet(response)
                     for keys in chords:
                         if keys:
