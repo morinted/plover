@@ -130,10 +130,6 @@ before_deploy:
     set -ex
     case "$TRAVIS_OS_NAME" in
     osx)
-      if [ $PYTHON = python2 ]
-      then
-        make -C osx
-      fi
       ;;
     linux)
       $PYTHON setup.py bdist_{egg,wheel}
