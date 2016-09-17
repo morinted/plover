@@ -11,6 +11,7 @@ import threading
 
 from plover import log
 from plover.machine.keymap import Keymap
+from plover.steno import Stroke
 from plover import system
 
 
@@ -75,8 +76,9 @@ class StenotypeBase(object):
 
     def _notify(self, steno_keys):
         """Invoke the callback of each subscriber with the given argument."""
+        stroke = Stroke(steno_keys)
         for callback in self.stroke_subscribers:
-            callback(steno_keys)
+            callback(stroke)
 
     def set_suppression(self, enabled):
         '''Enable keyboard suppression.

@@ -11,6 +11,7 @@ import unittest
 from mock import patch
 
 from plover.machine.passport import Passport
+from plover.steno import Stroke
 from plover import system
 
 
@@ -55,13 +56,15 @@ class TestCase(unittest.TestCase):
         cases = (
             # Test all keys
             (('!f#f+f*fAfCfBfEfDfGfFfHfKfLfOfNfQfPfSfRfUfTfWfYfXfZf^f~f',),
-            [['#', '*', 'A-', 'S-', '-B', '-E', '-D', '-G', '-F', 'H-', 'K-', 
-              '-L', 'O-', '-P', '-R', 'P-', 'S-', 'R-', '-U', 'T-', 'W-', '-T', 
-              '-S', '-Z', '*'],]),
+            [Stroke(['#', '*', 'A-', 'S-', '-B', '-E', '-D', '-G', '-F', 'H-',
+                     'K-', '-L', 'O-', '-P', '-R', 'P-', 'S-', 'R-', '-U',
+                     'T-', 'W-', '-T', '-S', '-Z', '*']),]),
             # Anything below 8 is not registered
-            (('S9T8A7',), [['S-', 'T-'],]),
+            (('S9T8A7',), [Stroke(['S-', 'T-']),]),
             # Sequence of strokes
-            (('SfTf', 'Zf', 'QfLf'), [['S-', 'T-'], ['-Z',], ['-R', '-L']]),
+            (('SfTf', 'Zf', 'QfLf'), [Stroke(['S-', 'T-']),
+                                      Stroke(['-Z',]),
+                                      Stroke(['-R', '-L'])]),
         )
 
         params = {k: v[0] for k, v in Passport.get_option_info().items()}
