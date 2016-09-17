@@ -27,6 +27,16 @@ from plover import (
 from utils.metadata import copy_metadata
 
 
+# Don't use six to avoid dependency with 'write_requirements' command.
+PY3 = sys.version_info[0] >= 3
+
+PACKAGE = '%s-%s-%s' % (
+    __software_name__,
+    __version__,
+    'py3' if PY3 else 'py2',
+)
+
+
 def get_version():
     if not os.path.exists('.git'):
         return None
@@ -44,10 +54,7 @@ def pyinstaller(*args):
         '--log-level=INFO',
         '--specpath=build',
         '--additional-hooks-dir=windows',
-        '--name=%s-%s' % (
-            __software_name__,
-            __version__,
-        ),
+        '--name=%s' % PACKAGE,
         '--noconfirm',
         '--windowed',
         '--onefile',
