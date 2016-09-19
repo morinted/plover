@@ -80,6 +80,10 @@ before_deploy:
     set -ex
     case "$TRAVIS_OS_NAME" in
     osx)
+      if [ $PYTHON = python3 ]
+      then
+        $PYTHON setup.py bdist_dmg
+      fi
       ;;
     linux)
       $PYTHON setup.py bdist_{egg,wheel}
