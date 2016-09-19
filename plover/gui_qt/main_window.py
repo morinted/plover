@@ -47,6 +47,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         # Dictionaries.
         self.dictionaries = DictionariesWidget(engine)
         self.scroll_area.setWidget(self.dictionaries)
+        self.dictionaries.setFocus()
         edit_menu = all_actions['menu_Edit'].menu()
         edit_menu.addAction(self.dictionaries.action_Undo)
         edit_menu.addSeparator()

@@ -50,6 +50,9 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         self.table.dropEvent = self._drop_event
         engine.signal_connect('config_changed', self.on_config_changed)
 
+    def setFocus(self):
+        self.table.setFocus()
+
     def on_config_changed(self, config_update):
         if 'dictionary_file_names' in config_update:
             self._states = []
