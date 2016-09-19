@@ -95,6 +95,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         self.restore_state()
         # Commands.
         engine.signal_connect('add_translation', partial(self._add_translation, manage_windows=True))
+        engine.signal_connect('focus', self._focus)
         engine.signal_connect('configure', partial(self._configure, manage_windows=True))
         engine.signal_connect('lookup', partial(self._lookup, manage_windows=True))
         # Load the configuration (but do not start the engine yet).
@@ -143,6 +144,11 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
             dictionary = None
         self._activate_dialog('add_translation', args=(dictionary,),
                               manage_windows=manage_windows)
+
+    def _focus(self):
+        self.set_visible(True)
+        self.activateWindow()
+        self.raise_()
 
     def _configure(self, manage_windows=False):
         self._activate_dialog('configuration', manage_windows=manage_windows)
