@@ -57,9 +57,10 @@ if sys.platform.startswith('win32'):
     USB_WRITER_GUID = uuid.UUID('{c5682e20-8059-604a-b761-77c4de9d5dbf}')
 
     # For Windows we directly call Windows API functions
-    SetupDiGetClassDevs=windll.setupapi.SetupDiGetClassDevsA
-    SetupDiEnumDeviceInterfaces=windll.setupapi.SetupDiEnumDeviceInterfaces
-    SetupDiGetInterfaceDeviceDetail=windll.setupapi.SetupDiGetDeviceInterfaceDetailA
+    SetupDiGetClassDevs = windll.setupapi.SetupDiGetClassDevsA
+    SetupDiEnumDeviceInterfaces = windll.setupapi.SetupDiEnumDeviceInterfaces
+    SetupDiGetInterfaceDeviceDetail = (
+        windll.setupapi.SetupDiGetDeviceInterfaceDetailA)
     CreateFile = windll.kernel32.CreateFileA
     ReadFile = windll.kernel32.ReadFile
     WriteFile = windll.kernel32.WriteFile
@@ -83,65 +84,57 @@ if sys.platform.startswith('win32'):
             self._usb_device = HANDLE(0)
 
         @staticmethod
-        def _open_device_instance(hdevinfo, guid):  #returns a handle to the writer opened with CreateFile
+        def _open_device_instance(device_info, guid):
             dev_interface_data = SP_DEVICE_INTERFACE_DATA()
             dev_interface_data.cbSize=sizeof(dev_interface_data)
 
-            status = SetupDiEnumDeviceInterfaces(hdevinfo, None, guid.bytes, 0, byref(dev_interface_data))
-            print('dev interface data', dev_interface_data)
-            print('status', status)
+            status = SetupDiEnumDeviceInterfaces(
+                device_info, None, guid.bytes, 0, byref(dev_interface_data))
             if status == 0:
                 return INVALID_HANDLE_VALUE
 
-            reqlength = DWORD(0)
-            # Call once with None to see how big a buffer we need for the detail data
+            request_length = DWORD(0)
+            # Call with None to see how big a buffer we need for detail data.
             SetupDiGetInterfaceDeviceDetail(
-                hdevinfo,
+                device_info,
                 byref(dev_interface_data),
                 None,
                 0,
-                pointer(reqlength),
+                pointer(request_length),
                 None
             )
             error = GetLastError()
-            print('last error', error)
             if error != ERROR_INSUFFICIENT_BUFFER:
                 return INVALID_HANDLE_VALUE
 
-            req = reqlength.value
+            characters = request_length.value
 
             class PSP_INTERFACE_DEVICE_DETAIL_DATA(Structure):
-                _fields_ = [('cbSize', DWORD), ('DevicePath', c_char * req)]
+                _fields_ = [('cbSize', DWORD),
+                            ('DevicePath', c_char * characters)]
             dev_detail_data = PSP_INTERFACE_DEVICE_DETAIL_DATA()
             dev_detail_data.cbSize = 5  # DWORD + 4 byte pointer
 
             # Now put the actual detail data into the buffer
             status = SetupDiGetInterfaceDeviceDetail(
-                hdevinfo, byref(dev_interface_data), byref(dev_detail_data), req,
-                pointer(reqlength), None
+                device_info, byref(dev_interface_data), byref(dev_detail_data),
+                characters, pointer(request_length), None
             )
-            print('status 2', status)
             if not status:
                 return INVALID_HANDLE_VALUE
-
-            print('dev path?!', dev_detail_data.DevicePath)
-            hdevhandle = CreateFile(
+            return CreateFile(
                 dev_detail_data.DevicePath,
                 0xC0000000, 0x3, 0, 0x3, 0x80, 0
             )
 
-            return hdevhandle
-
         @staticmethod
-        def _open_device_by_class_interface_and_instance(classguid): #returns a handle to the writer opened with CreateFile
-            # SetupDiGetClassDevs(pClassGuid, NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
-            hdevinfo = SetupDiGetClassDevs(classguid.bytes, 0, 0, 0x12)
-            print('hwdevinfo', hdevinfo)
-            if hdevinfo == INVALID_HANDLE_VALUE:
+        def _open_device_by_class_interface_and_instance(classguid):
+            device_info = SetupDiGetClassDevs(classguid.bytes, 0, 0, 0x12)
+            if device_info == INVALID_HANDLE_VALUE:
                 return INVALID_HANDLE_VALUE
 
-            usb_device = WindowsStenographMachine._open_device_instance(hdevinfo, classguid)
-            print('usb device:', usb_device)
+            usb_device = WindowsStenographMachine._open_device_instance(
+                device_info, classguid)
             return usb_device
 
         def _usb_write_packet(self):
@@ -149,26 +142,21 @@ if sys.platform.startswith('win32'):
             self._host_packet.SyncSeqType[1] = ord('G')
             self._host_packet.SyncSeqType[2] = self._sequence_number % 255
             self._host_packet.SyncSeqType[6] = READ_BYTES
-            if self._usb_device == INVALID_HANDLE_VALUE:  # device not opened yet
+            if self._usb_device == INVALID_HANDLE_VALUE:
                 return 0
             bytes_written = DWORD(0)
 
-            write_result = WriteFile(
+            WriteFile(
                 self._usb_device,
                 byref(self._host_packet),
                 32 + self._host_packet.uiDataLen,
                 byref(bytes_written),
                 None
             )
-            if write_result == 0:
-                write_result = GetLastError()
-            # if bytes_written == 0:  #unable to write any bytes, has the Writer been disconnected?
-              # the writer has probably been disconnected
-
             return bytes_written.value
 
         def _usb_read_packet(self):
-          assert self._usb_device != INVALID_HANDLE_VALUE, 'device isn\'t open'
+          assert self._usb_device != INVALID_HANDLE_VALUE, 'device not open'
 
           bytes_read = DWORD(0)
           # Always read this maximum amount.
@@ -201,13 +189,14 @@ if sys.platform.startswith('win32'):
             amount_read = self._usb_read_packet()
 
             if amount_read > 0:
-                print('amount read is', amount_read)
-                amount_read -= 32 # remove the header portion so I know how much data there is
+                amount_read -= HEADER_BYTES
             else:
-                return USB_NO_RESPONSE  # No bytes, is it still connected?
+                # No bytes means we've probably disconnected.
+                return USB_NO_RESPONSE
 
             # If the sequence number is not the same it is junk
-            if self._writer_packet.SyncSeqType[2] == self._host_packet.SyncSeqType[2]:
+            if (self._writer_packet.SyncSeqType[2] ==
+                    self._host_packet.SyncSeqType[2]):
                 self._sequence_number += 1
 
                 if self._writer_packet.SyncSeqType[6] == READ_BYTES:
@@ -228,7 +217,9 @@ if sys.platform.startswith('win32'):
             # If already connected, disconnect first.
             if self._usb_device != INVALID_HANDLE_VALUE:
                 self.disconnect()
-            self._usb_device = self._open_device_by_class_interface_and_instance(USB_WRITER_GUID)
+            self._usb_device = (
+                self._open_device_by_class_interface_and_instance(
+                    USB_WRITER_GUID))
             return self._usb_device != INVALID_HANDLE_VALUE
 
         def read(self, file_offset):
@@ -242,7 +233,8 @@ if sys.platform.startswith('win32'):
             elif not result:
                 return []
             elif result == RT_FILE_ENDED_ON_WRITER:
-                raise EOFError('No open file on writer, open file and reconnect')
+                raise EOFError(
+                    'No open file on writer, open file and reconnect')
             elif result == USB_NO_RESPONSE:
                 # Prompt a reconnect
                 raise IOError('No response from Stenograph device')
@@ -252,6 +244,7 @@ else:
 
     class LibUSBStenographMachine(object):
         def __init__(self):
+            self._usb_device = None
             self._endpoint_in = None
             self._endpoint_out = None
             self._sequence_number = 0
@@ -270,37 +263,43 @@ else:
             self._connected = False
 
         def connect(self):
-            self.disconnect()
-            try:
-                dev = core.find(idVendor=VENDOR_ID)
-            except ValueError:
-                log.warning('libusb must be installed for Plover to interface with Stenograph machines.')
-            else:
-                if dev is None:
-                    raise ValueError('Device not found')
-                dev.set_configuration()
-                # get an endpoint instance
-                cfg = dev.get_active_configuration()
-                intf = cfg[(0, 0)]
+            # Disconnect device if it's already connected.
+            if self._connected:
+                self.disconnect()
 
-                self._endpoint_out = util.find_descriptor(
-                    intf,
-                    custom_match=lambda e:
-                        util.endpoint_direction(e.bEndpointAddress) ==
-                            util.ENDPOINT_OUT)
-                assert self._endpoint_out is not None
+            # Find the device by the vendor ID.
+            self._usb_device = core.find(idVendor=VENDOR_ID)
+            if not self._usb_device:  # Device not found
+                return self._connected
 
-                self._endpoint_in = util.find_descriptor(
-                    intf,
-                    custom_match=lambda e:
-                        util.endpoint_direction(e.bEndpointAddress) ==
-                            util.ENDPOINT_IN)
-                assert self._endpoint_in is not None
-                self._connected = True
+            # Copy the default configuration.
+            self._usb_device.set_configuration()
+            config = self._usb_device.get_active_configuration()
+            interface = config[(0, 0)]
+
+            # Get the write endpoint.
+            self._endpoint_out = util.find_descriptor(
+                interface,
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                    util.ENDPOINT_OUT)
+            assert self._endpoint_out is not None, 'cannot find write endpoint'
+
+            # Get the read endpoint.
+            self._endpoint_in = util.find_descriptor(
+                interface,
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                    util.ENDPOINT_IN)
+            assert self._endpoint_in is not None, 'cannot find read endpoint'
+
+            self._connected = True
             return self._connected
 
         def disconnect(self):
             self._connected = False
+            util.dispose_resources(self._usb_device)
+            self._usb_device = None
             self._endpoint_in = None
             self._endpoint_out = None
 
@@ -314,15 +313,14 @@ else:
             try:
                 self._endpoint_out.write(self._packet)
                 response = self._endpoint_in.read(1024, 3000)
-            except core.USBError as e:
+            except core.USBError:
                 raise IOError('Machine read or write failed')
             else:
                 if response and len(response) >= HEADER_BYTES:
-                    print(response[:10])
                     writer_action = response[6]
-                    print('writer action', writer_action)
                     if writer_action == PACKET_ERROR:
-                        raise EOFError('No open file on writer, open file and reconnect')
+                        raise EOFError(
+                            'No open file on writer, open file and reconnect')
                     elif writer_action == READ_BYTES:
                         return response[HEADER_BYTES:]
                 return response
@@ -343,31 +341,7 @@ class Stenograph(ThreadedStenotypeBase):
         super(Stenograph, self).__init__()
         self._machine = StenographMachine()
 
-    def _on_stroke(self, keys):
-        steno_keys = self.keymap.keys_to_actions(keys)
-        if steno_keys:
-            self._notify(steno_keys)
-
-    def start_capture(self):
-        """Begin listening for output from the stenotype machine."""
-        if not self._machine.connect():
-            log.warning('Stenograph machine is not connected')
-            self._error()
-            return
-        super(Stenograph, self).start_capture()
-
-    def _reconnect(self):
-        self._initializing()
-        connected = self._machine.connect()
-        print('connected is', connected)
-        # Reconnect loop
-        while not self.finished.isSet() and not connected:
-            sleep(0.5)
-            connected = self._machine.connect()
-        return connected
-
-    def run(self):
-        self._ready()
+        # State variables used while reading steno from machine
         """
         Stenograph writers have "files" which are indexed from 0.
         Each line is a stroke. When the machine is connected, we
@@ -377,52 +351,90 @@ class Stenograph(ThreadedStenotypeBase):
         we consider ourselves "realtime" and further data should be
         interpreted.
         """
-        realtime = False
+        self._realtime = False
         """
         There is a bug in the stenograph firmware. After the steno
         "file" is closed on the machine, we receive a flag to tell us.
         However, straight after we start receiving 0 length responses,
         which are the same format as what we'd usually use to tell whether
         the machine is in realtime or not. If the stenographer opens a file
-        that has previous content in it, we will then blurt out all that content.
+        that has previous content in it, we will then blurt out all that
+        content.
+
         The strategy here is to take note of the first response that is exactly
         8 bytes -- a single stroke -- before beginning output. Combined with the
         0 length stroke check, hopefully we will not accidentally read back and
         blurt an entire steno file."""
-        read_exactly_8 = False
+        self._read_exactly_8 = False
+        self._file_offset = 0
 
-        file_offset = 0
+    def _on_stroke(self, keys):
+        steno_keys = self.keymap.keys_to_actions(keys)
+        if steno_keys:
+            self._notify(steno_keys)
+
+    def start_capture(self):
+        self.finished.clear()
+        self._initializing()
+        """Begin listening for output from the stenotype machine."""
+        if not self._connect_machine():
+            log.warning('Stenograph machine is not connected')
+            self._error()
+        else:
+            self._ready()
+            self.start()
+
+    def _connect_machine(self):
+        connected = False
+        try:
+            connected = self._machine.connect()
+        except ValueError:
+            log.warning('Libusb must be installed.')
+            self._error()
+        except AssertionError as e:
+            log.warning('Error connecting: %s', str(e))
+            self._error()
+        finally:
+            return connected
+
+    def _reconnect(self):
+        self._initializing()
+        connected = False
+        while not self.finished.isSet() and not connected:
+            sleep(0.25)
+            connected = self._connect_machine()
+        return connected
+
+    def _reset_state(self):
+        self._realtime = False
+        self._read_exactly_8 = False
+        self._file_offset = 0
+
+    def run(self):
+        self._reset_state()
         while not self.finished.isSet():
-            sys.stdout.flush()
             try:
-                response = self._machine.read(file_offset)
+                response = self._machine.read(self._file_offset)
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
                 log.debug('Stenograph exception: %s', str(e))
-                realtime = False
-                file_offset = 0
-                sleep(0.5)
+                self._reset_state()
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
                     self._ready()
-            except EOFError as e:
-                print('FILE ENDED ON WRITER')
+            except EOFError:
                 # File ended -- will resume normal operation after new file
-                file_offset = 0
-                realtime = False
-                read_exactly_8 = False
+                self._reset_state()
             else:
                 if response is None:
                     continue
-                if not read_exactly_8 and len(response) == 8:
-                    read_exactly_8 = True
+                if not self._read_exactly_8 and len(response) == 8:
+                    self._read_exactly_8 = True
                 content = len(response) > 0
-                file_offset += len(response)
-                if not realtime and not content:
-                    # Wait for a packet with no data before we are realtime.
-                    print('REALTIME FOUND')
-                    realtime = True
-                elif realtime and content and read_exactly_8:
+                self._file_offset += len(response)
+                if not self._realtime and not content:
+                    self._realtime = True
+                elif self._realtime and content and self._read_exactly_8:
                     chords = Stenograph.process_steno_packet(response)
                     for keys in chords:
                         if keys:
