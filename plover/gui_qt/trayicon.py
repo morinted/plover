@@ -23,7 +23,8 @@ class TrayIcon(QObject):
             'enabled',
         ):
             icon = QIcon(':/state-%s.svg' % state)
-            icon.setIsMask(True)
+            if hasattr(icon, 'setIsMask'):
+                icon.setIsMask(True)
             self._state_icons[state] = icon
         self._machine = None
         self._machine_state = 'disconnected'
