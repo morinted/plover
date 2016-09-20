@@ -157,7 +157,6 @@ class StenoEngine(object):
             self._machine.set_suppression(self._is_running)
             self._machine.add_state_callback(self._machine_state_callback)
             self._machine.add_stroke_callback(self._machine_stroke_callback)
-            self._machine.add_stroke_callback(log.stroke)
             self._machine_params = machine_params
             update_keymap = True
             start_machine = True
@@ -236,6 +235,7 @@ class StenoEngine(object):
         return False
 
     def _on_stroked(self, stroke):
+        log.stroke(stroke)
         self._translator.translate(stroke)
         self._trigger_hook('stroked', stroke)
 
