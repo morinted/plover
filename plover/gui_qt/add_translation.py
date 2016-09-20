@@ -41,11 +41,11 @@ class AddTranslation(QDialog, Ui_AddTranslation, WindowState):
             self._original_state = self.EngineState(None,
                                                     engine.translator_state,
                                                     engine.starting_stroke_state)
-            engine.translator_state = None
+            engine.clear_translator_state()
             self._strokes_state = self.EngineState(self._dictionary_filter,
                                                    engine.translator_state,
                                                    StartingStrokeState(True, False))
-            engine.translator_state = None
+            engine.clear_translator_state()
             self._translations_state = self.EngineState(None,
                                                         engine.translator_state,
                                                         StartingStrokeState(True, False))

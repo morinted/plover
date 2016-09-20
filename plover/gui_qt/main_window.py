@@ -46,6 +46,7 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         all_actions = find_menu_actions(self.menubar)
         # Dictionaries.
         self.dictionaries = DictionariesWidget(engine)
+        self.dictionaries.add_translation.connect(self._add_translation)
         self.scroll_area.setWidget(self.dictionaries)
         self.dictionaries.setFocus()
         edit_menu = all_actions['menu_Edit'].menu()

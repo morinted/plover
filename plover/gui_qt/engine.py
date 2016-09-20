@@ -20,7 +20,7 @@ class Engine(StenoEngine, QThread):
     signal_send_string = pyqtSignal(str)
     signal_send_backspaces = pyqtSignal(int)
     signal_send_key_combination = pyqtSignal(str)
-    signal_add_translation = pyqtSignal(QVariant)
+    signal_add_translation = pyqtSignal()
     signal_focus = pyqtSignal()
     signal_configure = pyqtSignal()
     signal_lookup = pyqtSignal()

@@ -1,7 +1,13 @@
 
 import os
 
-from PyQt5.QtCore import QItemSelection, QItemSelectionModel, Qt
+from PyQt5.QtCore import (
+    QItemSelection,
+    QItemSelectionModel,
+    QVariant,
+    Qt,
+    pyqtSignal,
+)
 from PyQt5.QtWidgets import (
     QFileDialog,
     QTableWidgetItem,
@@ -17,6 +23,8 @@ from plover.gui_qt.utils import ToolBar
 
 
 class DictionariesWidget(QWidget, Ui_DictionariesWidget):
+
+    add_translation = pyqtSignal(QVariant)
 
     def __init__(self, engine):
         super(DictionariesWidget, self).__init__()
@@ -217,7 +225,7 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
             dictionary = self._dictionaries[selection[-1]]
         else:
             dictionary = None
-        self._engine.signal_add_translation.emit(dictionary)
+        self.add_translation.emit(dictionary)
 
     def on_move_dictionaries_up(self):
         dictionaries = self._dictionaries[:]
