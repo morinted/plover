@@ -224,11 +224,7 @@ if sys.platform.startswith('win32'):
 
         def read(self, file_offset):
             result = self._read_steno(file_offset)
-            print('result --', result)
-            sys.stdout.flush()
             if result > 0:  # Got one or more steno strokes
-                print('got something:', result)
-                sys.stdout.flush()
                 return self._writer_packet.data[:result]
             elif not result:
                 return []
