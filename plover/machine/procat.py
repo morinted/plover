@@ -41,16 +41,14 @@ class ProCAT(SerialStenotypeBase):
             raw = self.serial_port.read(BYTES_PER_STROKE)
             if not raw:
                 continue
-            if len(raw) < BYTES_PER_STROKE:
-                raw += self.serial_port.read(BYTES_PER_STROKE - len(raw))
-
-            # Convert the raw to a list of steno keys.
-            steno_keys = self.keymap.keys_to_actions(
-                self.process_steno_packet(raw)
-            )
-            if steno_keys:
-                # Notify all subscribers.
-                self._notify(steno_keys)
+            if not raw[0]:
+                # Convert the raw to a list of steno keys.
+                steno_keys = self.keymap.keys_to_actions(
+                    self.process_steno_packet(raw)
+                )
+                if steno_keys:
+                    # Notify all subscribers.
+                    self._notify(steno_keys)
 
     @staticmethod
     def process_steno_packet(raw):
