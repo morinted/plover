@@ -19,7 +19,11 @@ from PyQt5.QtWidgets import (
 
 from plover.translation import escape_translation, unescape_translation
 from plover.misc import expand_path, shorten_path
-from plover.steno import normalize_steno, filter_entry
+from plover.steno import (
+    filter_entry,
+    normalize_steno,
+    normalized_steno_to_indexes
+)
 
 from plover.gui_qt.dictionary_editor_ui import Ui_DictionaryEditor
 from plover.gui_qt.utils import ToolBar, WindowState
@@ -198,7 +202,9 @@ class DictionaryItemModel(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        if column == 2:
+        if column == 0:
+            key = lambda entry: normalized_steno_to_indexes(entry.strokes)
+        elif column == 2:
             key = attrgetter('dictionary_path')
         elif column == 3:
             key = lambda entry: len(entry.strokes)
