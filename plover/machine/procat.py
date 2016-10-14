@@ -39,7 +39,9 @@ class ProCAT(SerialStenotypeBase):
 
             # Grab data from the serial port.
             raw = self.serial_port.read(BYTES_PER_STROKE)
-            if not raw or raw[0] == 1:
+            if (not raw or len(raw) < BYTES_PER_STROKE or
+                    # First bit should be 0, last byte should be FF.
+                    raw[0] & 128 or raw[3] != 0xFF):
                 continue
 
             # Convert the raw to a list of steno keys.
