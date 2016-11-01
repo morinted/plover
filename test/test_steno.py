@@ -131,6 +131,20 @@ class StenoTestCase(unittest.TestCase):
         self.assertFalse(filter_entry(
             ('TKOG',), 'dog', strokes_filter='TKOGS'
         ))
+        # Boundaries count as beginning / endings
+        self.assertTrue(filter_entry(
+            ('TKOG',), 'dog', strokes_filter='TKOG/'
+        ))
+        self.assertTrue(filter_entry(
+            ('TKOG',), 'dog', strokes_filter='/TKOG/'
+        ))
+        self.assertTrue(filter_entry(
+            ('TKOG',), 'dog', strokes_filter='/TKOG'
+        ))
+        # Must contain all of the filter
+        self.assertFalse(filter_entry(
+            ('TKOG',), 'dog', strokes_filter='TKOGS'
+        ))
         # Must contain all strokes (partially)
         self.assertFalse(filter_entry(
             ('TKOG',), 'dog', strokes_filter='TKOG/S'
@@ -149,11 +163,11 @@ class StenoTestCase(unittest.TestCase):
             strokes_filter='TPHU/KWRORBG'
         ))
 
-        # Interesting edge case: trailing slash.
+        # Trailing slash.
         self.assertTrue(filter_entry(
             ('TKOG', 'S',), 'dogs', strokes_filter='TKOG/'
         ))
-        self.assertFalse(filter_entry(
+        self.assertTrue(filter_entry(
             ('TKOG',), 'dog', strokes_filter='TKOG/'
         ))
 

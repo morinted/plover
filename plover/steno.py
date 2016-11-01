@@ -100,7 +100,8 @@ def sort_steno_keys(steno_keys):
 
 def filter_entry(strokes, translation, strokes_filter=None,
                  translation_filter=None, case_sensitive=False, regex=None):
-    joined_strokes = '/'.join(strokes)
+    # In the form: /STK/STK/ and /STK/
+    joined_strokes = '/' + '/'.join(strokes) + '/'
     # Two cases:
     #   Looking for 'STPH' and get 'STPH/BA'
     #   Looking for 'BA' and get 'STPH/BA'
