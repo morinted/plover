@@ -125,6 +125,9 @@ class StenoTestCase(unittest.TestCase):
 
         # Must start with
         self.assertFalse(filter_entry(
+            ('TKOG',), 'dog', strokes_filter='/KOG'
+        ))
+        self.assertTrue(filter_entry(
             ('TKOG',), 'dog', strokes_filter='KOG'
         ))
         # Must contain all of the filter
