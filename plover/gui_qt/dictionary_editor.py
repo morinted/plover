@@ -302,6 +302,7 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
                 for dictionary in engine.dictionaries.dicts
                 if dictionary.get_path() in dictionary_paths
             ]
+        self.dictionary_paths = dictionary_paths
         sort_column, sort_order = 0, Qt.AscendingOrder
         self._model = DictionaryItemModel(dictionary_list,
                                           sort_column,
