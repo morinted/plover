@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>329</width>
+    <width>402</width>
     <height>427</height>
    </rect>
   </property>
@@ -105,8 +105,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>311</width>
-         <height>233</height>
+         <width>376</width>
+         <height>223</height>
         </rect>
        </property>
       </widget>
@@ -151,8 +151,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>329</width>
-     <height>25</height>
+     <width>402</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -175,6 +175,7 @@
     <addaction name="action_NewTranslation"/>
     <addaction name="action_PaperTape"/>
     <addaction name="action_Suggestions"/>
+    <addaction name="action_Builder"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -216,6 +217,7 @@
    <addaction name="action_Lookup"/>
    <addaction name="action_Suggestions"/>
    <addaction name="action_PaperTape"/>
+   <addaction name="action_Builder"/>
   </widget>
   <action name="action_Quit">
    <property name="text">
@@ -346,6 +348,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+.</string>
+   </property>
+  </action>
+  <action name="action_Builder">
+   <property name="icon">
+    <iconset resource="resources/resources.qrc">
+     <normaloff>:/books.svg</normaloff>:/books.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Dictionary &amp;Builder</string>
+   </property>
+   <property name="toolTip">
+    <string>Start the dictionary builder</string>
    </property>
   </action>
  </widget>
@@ -561,10 +575,27 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>action_Builder</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_builder()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>200</x>
+     <y>213</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>on_reconnect()</slot>
   <slot>on_add_translation()</slot>
+  <slot>on_builder()</slot>
   <slot>on_configure()</slot>
   <slot>on_manage_dictionaries()</slot>
   <slot>on_lookup()</slot>
