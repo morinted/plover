@@ -14,7 +14,8 @@ from plover.gui_qt.log_qt import NotificationHandler
 from plover.gui_qt.main_window_ui import Ui_MainWindow
 from plover.gui_qt.config_window import ConfigWindow
 from plover.gui_qt.dictionaries_widget import DictionariesWidget
-from plover.gui_qt.add_translation import AddTranslation
+from plover.gui_qt.dictionary_builder import DictionaryBuilder
+from plover.gui_qt.add_translation_dialog import AddTranslationDialog
 from plover.gui_qt.lookup_dialog import LookupDialog
 from plover.gui_qt.suggestions_dialog import SuggestionsDialog
 from plover.gui_qt.about_dialog import AboutDialog
@@ -36,7 +37,8 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
         self._active_dialogs = {}
         self._dialog_class = {
             'about'             : AboutDialog,
-            'add_translation'   : AddTranslation,
+            'add_translation'   : AddTranslationDialog,
+            'builder'           : DictionaryBuilder,
             'configuration'     : ConfigWindow,
             'lookup'            : LookupDialog,
             'paper_tape'        : PaperTape,
@@ -158,6 +160,9 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
     def _configure(self, manage_windows=False):
         self._activate_dialog('configuration', manage_windows=manage_windows)
 
+    def _builder(self, manage_windows=False):
+        self._activate_dialog('builder', manage_windows=manage_windows)
+
     def _lookup(self, manage_windows=False):
         self._activate_dialog('lookup', manage_windows=manage_windows)
 
@@ -194,6 +199,9 @@ class MainWindow(QMainWindow, Ui_MainWindow, WindowState):
 
     def on_add_translation(self):
         self._add_translation()
+
+    def on_builder(self):
+        self._activate_dialog('builder')
 
     def on_lookup(self):
         self._lookup()

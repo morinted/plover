@@ -155,7 +155,11 @@ class StenoDictionaryCollection(object):
             d = self.dicts[0]
         else:
             d = self.get_by_path(dictionary)
-        d[key] = value
+        if value is None:
+            if key in d:
+                del d[key]
+        else:
+            d[key] = value
 
     def save(self, path_list=None):
         '''Save the dictionaries in <path_list>.
