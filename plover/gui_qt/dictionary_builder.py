@@ -67,11 +67,12 @@ class DictionaryBuilder(QDialog, Ui_DictionaryBuilder, WindowState):
             word = self.word_list_widget.item(self._current_word).text()
         self.add_translation.translation.setText(word)
         self.add_translation.on_translation_edited()
-        self.label.setText('Defining word %d of %d: %s' %
-                           (self._current_word + 1,
-                            len(self._word_lists[0]),
-                            word
-                           ))
+        fmt = _('Defining word {current} of {total}: {word}')
+        info = fmt.format(current=self._current_word + 1,
+                          total=len(self._word_lists[0]),
+                          word=word
+                          )
+        self.label.setText(info)
 
     def set_sort_order(self, index=None):
         if index is None:
@@ -84,12 +85,12 @@ class DictionaryBuilder(QDialog, Ui_DictionaryBuilder, WindowState):
 
     def input_buttons(self):
         self.button_box.clear()
-        button = QPushButton('&Quit', self)
-        button.setToolTip('Exit the Dictionary Builder')
+        button = QPushButton(_('&Quit'), self)
+        button.setToolTip(_('Exit the Dictionary Builder'))
         button.setShortcut(Qt.CTRL + Qt.Key_W)
         self.button_box.addButton(button, QDialogButtonBox.RejectRole)
-        button = QPushButton('&Start Building', self)
-        button.setToolTip('Analyse the current text and start building')
+        button = QPushButton(_('&Start Building'), self)
+        button.setToolTip(_('Analyse the current text and start building'))
         self.button_box.addButton(button, QDialogButtonBox.AcceptRole)
 
     def builder_buttons(self):
@@ -101,46 +102,46 @@ class DictionaryBuilder(QDialog, Ui_DictionaryBuilder, WindowState):
                                   QKeySequence.NativeText
                               )))
 
-        button = QPushButton('&Add', self)
+        button = QPushButton(_('&Add'), self)
         button.setShortcut(Qt.Key_Return)
-        set_tooltip_with_shortcut(button, 'Add the current stroke')
+        set_tooltip_with_shortcut(button, _('Add the current stroke'))
         button.setDefault(True)
         self.button_box.addButton(button, QDialogButtonBox.AcceptRole)
 
-        button = QPushButton('&Previous', self)
+        button = QPushButton(_('&Previous'), self)
         button.clicked.connect(self.on_previous)
         button.setShortcut(QKeySequence.MoveToPreviousLine)
         set_tooltip_with_shortcut(button,
-                               'Go back to the previous word')
+                                  _('Go back to the previous word'))
         self.button_box.addButton(button, QDialogButtonBox.ActionRole)
 
-        button = QPushButton('&Next', self)
+        button = QPushButton(_('&Next'), self)
         button.clicked.connect(self.on_next)
         button.setShortcut(QKeySequence.MoveToNextLine)
         set_tooltip_with_shortcut(button,
-                               'Skip the current word and go to the next')
+                                  _('Skip the current word and go to the next'))
         self.button_box.addButton(button, QDialogButtonBox.ActionRole)
 
-        button = QPushButton('A&dd and Next', self)
+        button = QPushButton(_('A&dd and Next'), self)
         button.clicked.connect(self.on_add_and_next)
         button.setShortcut(Qt.CTRL + Qt.Key_S)
         set_tooltip_with_shortcut(
             button,
-            'Add the current stroke and move to the next word'
+            _('Add the current stroke and move to the next word')
         )
         self.button_box.addButton(button, QDialogButtonBox.DestructiveRole)
 
-        button = QPushButton('&Undo', self)
+        button = QPushButton(_('&Undo'), self)
         button.setShortcut(Qt.CTRL + Qt.Key_U)
         button.setEnabled(False)
         button.clicked.connect(self.on_undo)
-        set_tooltip_with_shortcut(button, 'Undo the last addition')
+        set_tooltip_with_shortcut(button, _('Undo the last addition'))
         self._undo_button = button
         self.button_box.addButton(button, QDialogButtonBox.DestructiveRole)
 
-        button = QPushButton('&Back to Input', self)
+        button = QPushButton(_('&Back to Input'), self)
         button.setShortcut(Qt.CTRL + Qt.Key_W)
-        set_tooltip_with_shortcut(button, 'Back to word list')
+        set_tooltip_with_shortcut(button, _('Back to word list'))
 
         button.clicked.connect(self.reject)
         self.button_box.addButton(button, QDialogButtonBox.ApplyRole)
@@ -247,9 +248,13 @@ class DictionaryBuilder(QDialog, Ui_DictionaryBuilder, WindowState):
                 self.add_translation.strokes.setFocus()
                 self.set_sort_order()
             else:
-                QMessageBox(QMessageBox.Warning, 'No words found',
-                        'Please enter text to build your dictionaries with.',
-                        QMessageBox.Ok, self).exec()
+                QMessageBox(
+                    QMessageBox.Warning,
+                    _('No words found'),
+                    _('Please enter text to build your dictionaries with.'),
+                    QMessageBox.Ok,
+                    self
+                ).exec()
         else:
             # Default action during editing.
             self.on_add()
