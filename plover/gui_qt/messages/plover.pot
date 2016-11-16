@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plover 4.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-11-15 22:35-0500\n"
+"POT-Creation-Date: 2016-11-16 09:28-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -427,6 +427,7 @@ msgid "Move selected dictionaries down."
 msgstr ""
 
 #: plover/gui_qt/dictionary_builder.py:70
+#: plover/gui_qt/dictionary_builder_ui.py:110
 msgid "Defining word {current} of {total}: {word}"
 msgstr ""
 
@@ -524,10 +525,6 @@ msgstr ""
 msgid "Alphabetical"
 msgstr ""
 
-#: plover/gui_qt/dictionary_builder_ui.py:110
-msgid "Defining word 0 of 0:"
-msgstr ""
-
 #: plover/gui_qt/dictionary_editor.py:226
 #: plover/gui_qt/dictionary_editor_ui.py:187
 msgid "Strokes"
@@ -544,6 +541,11 @@ msgstr ""
 
 #: plover/gui_qt/dictionary_editor.py:234
 msgid "# Words"
+msgstr ""
+
+#: plover/gui_qt/dictionary_editor.py:553
+#: plover/gui_qt/dictionary_editor_ui.py:190
+msgid "Showing {filtered} / {total}"
 msgstr ""
 
 #: plover/gui_qt/dictionary_editor_ui.py:178
@@ -584,10 +586,6 @@ msgstr ""
 
 #: plover/gui_qt/dictionary_editor_ui.py:189
 msgid "Duplicates"
-msgstr ""
-
-#: plover/gui_qt/dictionary_editor_ui.py:190
-msgid "Showing 0 / 0"
 msgstr ""
 
 #: plover/gui_qt/dictionary_editor_ui.py:191
