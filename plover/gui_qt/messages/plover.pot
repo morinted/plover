@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plover 4.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-11-15 22:23-0500\n"
+"POT-Creation-Date: 2016-11-15 22:35-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -317,8 +317,29 @@ msgstr ""
 msgid "Dictionary Files"
 msgstr ""
 
-#: plover/gui_qt/dictionaries_widget.py:317
+#: plover/gui_qt/dictionaries_widget.py:287
+msgid "&Save As..."
+msgstr ""
+
+#: plover/gui_qt/dictionaries_widget.py:291
+msgid "&Open Containing Folder"
+msgstr ""
+
+#: plover/gui_qt/dictionaries_widget.py:311
+msgid "{ext_upper} Dictionary (*{dot_ext})"
+msgstr ""
+
+#: plover/gui_qt/dictionaries_widget.py:322
 msgid "Save Dictionary As..."
+msgstr ""
+
+#: plover/gui_qt/dictionaries_widget.py:339
+#, python-format
+msgid "Error while saving new dictionary: %s"
+msgstr ""
+
+#: plover/gui_qt/dictionaries_widget.py:349
+msgid "Dictionary Saved"
 msgstr ""
 
 #: plover/gui_qt/dictionaries_widget_ui.py:93

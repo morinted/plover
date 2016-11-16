@@ -284,11 +284,11 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
     def _row_selector(self, pos):
         menu = QMenu()
 
-        action = QAction('Save As...', self)
+        action = QAction(_('&Save As...'), self)
         action.triggered.connect(self._save_as)
         menu.addAction(action)
 
-        action = QAction('Open Containing Folder', self)
+        action = QAction(_('&Open Containing Folder'), self)
         action.triggered.connect(self._open_file_directory)
         menu.addAction(action)
 
@@ -306,12 +306,17 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         filename = [self._dictionaries[item.row()]
                         for item in self.table.selectedItems()][0]
         file_ext = os.path.splitext(filename)[-1].lower()
-        if file_ext in dictionary_formats:
-            selected_filter = '%s Dictionary (*%s)' % (
-                file_ext.upper().strip('.'), file_ext)
 
-        filters = ';;'.join('%s Dictionary (*%s)' % (
-            ext.upper().strip('.'), ext) for ext in dictionary_formats)
+        def extension_string(ext):
+            fmt = _('{ext_upper} Dictionary (*{dot_ext})')
+            return fmt.format(ext_upper=ext.upper().strip('.'),
+                              dot_ext=ext)
+
+        selected_filter = (
+            extension_string(file_ext) if file_ext in dictionary_formats
+            else None)
+
+        filters = ';;'.join(extension_string(ext) for ext in dictionary_formats)
 
         new_filename = QFileDialog.getSaveFileName(
             self, _('Save Dictionary As...'), filename,
@@ -331,17 +336,17 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
                     convert_dictionary(filename, new_filename)
             except Exception:
                 log.error(
-                    'Error while saving new dictionary: %s',
+                    _('Error while saving new dictionary: %s'),
                     new_filename,
                     exc_info = True
                 )
             else:
-                msg = ('%s was saved to %s.\n\n'
+                fmt = ('{filename} was saved to {directory}.\n\n'
                        'Would you like to add the new dictionary to Plover?'
-                       % (file_name, file_directory)
                        )
+                message = fmt.format(filename=file_name, directory=file_directory)
                 if QMessageBox.question(
-                        self, 'Dictionary Saved', msg,
+                        self, _('Dictionary Saved'), message,
                         QMessageBox.Yes | QMessageBox.No,
                         QMessageBox.Yes
                         ) == QMessageBox.Yes:
