@@ -550,11 +550,18 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
 
 
     def _update_filtered_count(self):
-        self.filtered_label.setText(
-            'Showing %s / %s' %
+        fmt = _('Showing {filtered} / {total}')
+        label = fmt.format(
             (locale.format("%d", len(self._model._entries), grouping=True),
-             locale.format("%d", sum(len(dictionary) for dictionary in self._model._dictionary_list), grouping=True))
-        )
+             locale.format(
+                 "%d",
+                sum(len(dictionary)
+                    for dictionary in self._model._dictionary_list
+                    ),
+                grouping=True)
+             )
+            )
+        self.filtered_label.setText(label)
 
     def on_clear_filter(self):
         self.strokes_filter.setText('')
