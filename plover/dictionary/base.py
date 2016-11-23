@@ -15,6 +15,7 @@ import threading
 # Python 2/3 compatibility.
 from six import reraise
 
+
 import plover.dictionary.json_dict as json_dict
 import plover.dictionary.rtfcre_dict as rtfcre_dict
 from plover.config import JSON_EXTENSION, RTF_EXTENSION
@@ -77,16 +78,18 @@ def save_dictionary(d, filename, saver):
     # Write the new file to a temp location.
     tmp = filename + '.tmp'
     with open(tmp, 'wb') as fp:
-        saver(d, fp)
+        failed_entries = saver(d, fp)
 
     # Then move the new file to the final location.
     shutil.move(tmp, filename)
+    return failed_entries
 
 def convert_dictionary(read_path, write_path):
     dict_in = load_dictionary(read_path)
     dict_out = create_dictionary(write_path)
     dict_out.update(dict_in)
     dict_out.save()
+    return dict_out
     
 class ThreadedSaver(object):
     """A callable that saves a dictionary in the background.
@@ -98,11 +101,14 @@ class ThreadedSaver(object):
         self.filename = filename
         self.saver = saver
         self.lock = threading.Lock()
+        self.t = None
+        self.failed_entries = None
         
     def __call__(self):
         t = threading.Thread(target=self.save)
         t.start()
+        self.t = t
         
     def save(self):
         with self.lock:
-            save_dictionary(self.d, self.filename, self.saver)
+            self.failed_entries = save_dictionary(self.d, self.filename, self.saver)

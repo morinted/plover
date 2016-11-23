@@ -17,11 +17,12 @@ from PyQt5.QtWidgets import (
     QWidget,
     QMenu,
     QAction,
-    QMessageBox
+    QMessageBox,
 )
 
 from plover import log
 from plover.dictionary.base import dictionaries as dictionary_formats
+from plover.gui_qt.conversion_failure_dialog import ConversionFailureDialog
 from plover.misc import shorten_path
 
 from plover.gui_qt.dictionaries_widget_ui import Ui_DictionariesWidget
@@ -324,11 +325,12 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
             new_ext = os.path.splitext(new_filename)[-1].lower()
 
             try:
+                result = None
                 if file_ext == new_ext:
                     shutil.copyfile(filename, new_filename)
                 else:
                     open(new_filename, 'w')
-                    convert_dictionary(filename, new_filename)
+                    result = convert_dictionary(filename, new_filename)
             except Exception:
                 log.error(
                     'Error while saving new dictionary: %s',
@@ -336,6 +338,14 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
                     exc_info = True
                 )
             else:
+                if result:
+                    if result.save.t:
+                        result.save.t.join()
+                    if result.save.failed_entries:
+                        ConversionFailureDialog(
+                            result.save.failed_entries,
+                            parent=self
+                        ).exec()
                 msg = ('%s was saved to %s.\n\n'
                        'Would you like to add the new dictionary to Plover?'
                        % (file_name, file_directory)
@@ -349,3 +359,4 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
                     if new_filename not in self._dictionaries:
                         dictionaries.append(new_filename)
                     self._update_dictionaries(dictionaries)
+
