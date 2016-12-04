@@ -20,6 +20,7 @@ import re
 # Python 2/3 compatibility.
 from six import get_function_code
 
+from plover import log
 from plover.resource import resource_stream
 from plover.steno import normalize_steno
 from plover.steno_dictionary import StenoDictionary
@@ -103,7 +104,7 @@ class TranslationConverter(object):
 
     def _re_handle_commands(self, m):
         r'(\\\*)?\\([a-z]+)(-?[0-9]+)? ?'
-        
+
         command = m.group(2)
         arg = m.group(3)
         if arg:
@@ -335,13 +336,23 @@ def save_dictionary(d, fp):
     writer = codecs.getwriter('cp1252')(fp)
     writer.write(HEADER)
 
-    for s, t in d.items():
-        s = '/'.join(s)
-        t = format_translation(t)
+    failed_entries = []
+    for strokes, translation in d.items():
+        s = '/'.join(strokes)
+        t = format_translation(translation)
         entry = "{\\*\\cxs %s}%s\r\n" % (s, t)
-        writer.write(entry)
+        try:
+            writer.write(entry)
+        except UnicodeEncodeError:
+            failed_entries.append(
+                (s,
+                 translation,
+                 _('Plover does not support Unicode characters in RTF'))
+            )
 
     writer.write("}\r\n")
+    return failed_entries
 
 def create_dictionary():
     return StenoDictionary()
+
