@@ -552,15 +552,15 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
     def _update_filtered_count(self):
         fmt = _('Showing {filtered} / {total}')
         label = fmt.format(
-            (locale.format("%d", len(self._model._entries), grouping=True),
-             locale.format(
+             filtered=locale.format("%d",
+                                    len(self._model._entries),
+                                    grouping=True),
+             total=locale.format(
                  "%d",
-                sum(len(dictionary)
-                    for dictionary in self._model._dictionary_list
-                    ),
-                grouping=True)
+                 sum(len(dictionary) for dictionary in self._model._dictionary_list),
+                grouping=True
              )
-            )
+        )
         self.filtered_label.setText(label)
 
     def on_clear_filter(self):

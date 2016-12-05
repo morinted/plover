@@ -208,6 +208,7 @@ class DictionariesWidget(QWidget, Ui_DictionariesWidget):
         if self._editor is not None:
             self._editor.close()
         self._editor = DictionaryEditor(self._engine, dictionaries, None)
+
         def on_finished():
             if self._editor:
                 self._editor.destroy()

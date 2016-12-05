@@ -154,7 +154,7 @@ class DictionaryBuilder(QDialog, Ui_DictionaryBuilder, WindowState):
         # Need to avoid:
         #  - Pure numbers, e.g. 2, 1234
         #  - [2]
-        words = re.findall(r'(?:[\w\-_\']*[^\d\s\W]+[\w\-_\']*|{[^\s]*})+',
+        words = re.findall(r'([\w\-_\'’]*[^\d\s\W]+[\w\-_\'’]*|{[^\s]*})',
                            user_text)
         if words:
             word_list = OrderedCounter(words)
