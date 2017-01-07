@@ -85,8 +85,10 @@ class TxBolt(plover.machine.base.SerialStenotypeBase):
                 self._last_key_set = key_set
                 for i in range(6):
                     if (byte >> i) & 1:
-                        self._pressed_keys.append(
-                            STENO_KEY_CHART[(key_set * 6) + i])
+                        goal = (key_set * 6) + i
+                        if goal < len(STENO_KEY_CHART):
+                            self._pressed_keys.append(
+                                STENO_KEY_CHART[(key_set * 6) + i])
                 if 3 == key_set:
                     # Last possible set, the stroke is finished.
                     self._finish_stroke()

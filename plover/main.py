@@ -62,6 +62,7 @@ def main():
         with plover.oslayer.processlock.PloverLock():
             if sys.platform.startswith('darwin'):
                 appnope.nope()
+                print('noping pl0x')
             init_config_dir()
             # This must be done after calling init_config_dir, so
             # Plover's configuration directory actually exists.

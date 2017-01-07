@@ -2,6 +2,7 @@
 
 import threading
 from time import sleep
+from appnope import nope
 
 # Python 2/3 compatibility.
 from six.moves.queue import Queue
@@ -302,6 +303,7 @@ class KeyboardEmulation(object):
     RAW_PRESS, STRING_PRESS = range(2)
 
     def __init__(self):
+        nope()
         self._layout = KeyboardLayout()
 
     @staticmethod
