@@ -541,7 +541,6 @@ class DictionaryEditor(QDialog, Ui_DictionaryEditor, WindowState):
             # Regex overrides some other filter criteria
             if regex:
                 unescaped_translation_filter=None
-                strokes_filter=None
                 case_sensitive=None
         self._model.filter(strokes_filter, unescaped_translation_filter,
                            case_sensitive, regex, collisions,
