@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+import zipfile
 
 
 PY3 = sys.version_info[0] >= 3
@@ -457,6 +458,17 @@ class Helper(object):
             print('sha1 does not match: %s instead of %s' % (h.hexdigest(), checksum))
             os.unlink(dst)
         assert os.path.exists(dst), 'could not successfully retrieve %s' % url
+
+    def _zipdir(self, directory, compression=zipfile.ZIP_DEFLATED):
+        print('zipping',  directory)
+        zipname = '%s.zip' % directory
+        prefix = os.path.dirname(directory)
+        with zipfile.ZipFile(zipname, 'w', compression) as zf:
+            for dirpath, dirnames, filenames in os.walk(directory):
+                for name in filenames:
+                    src = os.path.join(dirpath, name)
+                    dst = os.path.relpath(src, prefix)
+                    zf.write(src, dst)
 
     def install(self, name, src, checksum, handler_format=None, handler_args=(), path_dir=None):
         info('installing %s', name)
