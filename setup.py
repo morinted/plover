@@ -386,7 +386,16 @@ cmdclass['build_py'] = CustomBuildPy
 
 
 def write_requirements(extra_features=()):
-    requirements = setup_requires + install_requires + tests_require
+    requirements = []
+    if 'nosetup' in extra_features:
+        extra_features.remove('nosetup')
+    else:
+        requirements.extend(setup_requires)
+    if 'notests' in extra_features:
+        extra_features.remove('notests')
+    else:
+        requirements.extend(tests_require)
+    requirements.extend(install_requires)
     for feature, dependencies in extras_require.items():
         if feature.startswith(':'):
             condition = feature[1:]
