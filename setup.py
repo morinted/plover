@@ -369,6 +369,9 @@ extras_require = {
         'pyobjc-framework-Quartz==3.1.1',
         'appnope>=0.1.0',
     ],
+    'gui_qt': [
+        'PyQt5',
+    ],
 }
 
 tests_require = [

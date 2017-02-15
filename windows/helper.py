@@ -252,7 +252,7 @@ class Helper(object):
         DEPENDENCIES = (
             ('pip', 'pip:pip',
              None, None, (), None),
-            ('PyQt5', 'pip:PyQt5',
+            ('pyqt-distutils', 'pip:pyqt-distutils',
              None, None, (), None),
         )
     else:
@@ -500,7 +500,10 @@ class Helper(object):
         for name, src, checksum, handler_format, handler_args, path_dir in self.DEPENDENCIES:
             self.install(name, src, checksum, handler_format=handler_format, handler_args=handler_args, path_dir=path_dir)
         info('install requirements')
-        self._env.run(('python.exe', 'setup.py', 'write_requirements'))
+        cmd = ('python.exe', 'setup.py', 'write_requirements')
+        if PY3:
+            cmd += ('gui_qt',)
+        self._env.run(cmd)
         self._pip_install('-r', 'requirements.txt', '-c', 'requirements_constraints.txt')
 
     def cmd_run(self, executable, *args):
