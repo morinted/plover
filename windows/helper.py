@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import argparse
+import contextlib
 import hashlib
 import inspect
 import os
@@ -434,16 +435,17 @@ class Helper(object):
         self._env.run(cmd)
 
     def _download(self, url, checksum, dst):
-        import wget
+        import requests
         retries = 0
         while retries < 2:
             if not os.path.exists(dst):
                 retries += 1
                 try:
-                    wget.download(url, out=dst)
-                    print()
+                    with contextlib.closing(requests.get(url, stream=True)) as r:
+                        with open(dst, 'wb') as fp:
+                            for chunk in iter(lambda: r.raw.read(4 * 1024), b''):
+                                fp.write(chunk)
                 except Exception as e:
-                    print()
                     print('error', e)
                     continue
             h = hashlib.sha1()
@@ -599,7 +601,7 @@ class Win32Helper(Helper):
 
     DEPENDENCIES = (
         # Install wget first, since we'll be using it for fetching some of the other dependencies.
-        ('wget', 'pip:wget', None, None, (), None),
+        ('requests', 'pip:requests', None, None, (), None),
     ) + Helper.DEPENDENCIES
 
     def __init__(self):
