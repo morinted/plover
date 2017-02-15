@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import argparse
 import contextlib
+import glob
 import hashlib
 import inspect
 import os
@@ -250,11 +251,13 @@ class Win32Environment(Environment):
 class Helper(object):
 
     if PY3:
-        # Note: update pip so hidapi install from wheel works.
         DEPENDENCIES = (
+            # Update pip so hidapi install from wheel works.
             ('pip', 'pip:pip',
              None, None, (), None),
             ('pyqt-distutils', 'pip:pyqt-distutils',
+             None, None, (), None),
+            ('wheel', 'pip:wheel',
              None, None, (), None),
         )
     else:
@@ -530,11 +533,157 @@ class Helper(object):
 
     def cmd_dist(self):
         '''create windows distribution
+
+        keep: don't remove build/dist directories at start
         '''
         self._rmtree('build')
         self._rmtree('dist')
         info('creating distribution')
         self._env.run(('python.exe', 'setup.py', 'bdist_win'))
+
+    if PY3:
+
+        def cmd_newdist(self, keep=False):
+            '''create windows distribution
+            '''
+            from plover import __version__
+            if not keep:
+                self._rmtree('build')
+                self._rmtree('dist')
+            info('creating distribution')
+            def download(src, checksum):
+                dst = os.path.join(self._env.get_distdir(), os.path.basename(src))
+                self._download(src, checksum, dst)
+                return dst
+            # Generate and cache wheels.
+            wheels_dir = os.path.join(self._env.get_distdir(), 'wheels')
+            self._env.run(('python.exe', 'setup.py', 'write_requirements',
+                           'nosetup', 'notests', 'gui_qt'))
+            self._env.run(('python.exe', '-m', 'pip', 'wheel',
+                           '-w', wheels_dir,
+                           '-r', 'requirements.txt',
+                           '-c', 'requirements_constraints.txt'))
+            # Setup embedded Python distribution.
+            # Note: python35.zip is decompressed to prevent errors when 2to3 is
+            # used (including indirectly by setuptools `build_py` command.
+            py_embedded = download('https://www.python.org/ftp/python/3.5.2/python-3.5.2-embed-win32.zip',
+                                   'a62675cd88736688bb87999e8b86d13ef2656312')
+            dist_dir = os.path.join('dist', 'plover-%s-py3' % __version__)
+            stdlib = os.path.join(dist_dir, 'python35.zip')
+            os.makedirs(dist_dir)
+            for path in (py_embedded, stdlib):
+                with zipfile.ZipFile(path) as zip:
+                    zip.extractall(dist_dir)
+            os.unlink(stdlib)
+            dist_py = (os.path.join(dist_dir, 'python.exe'),)
+            # Install pip.
+            get_pip = download('https://bootstrap.pypa.io/get-pip.py',
+                               '3d45cef22b043b2b333baa63abaa99544e9c031d')
+            self._env.run(dist_py + (get_pip,))
+            dist_pip = dist_py + ('-m', 'pip')
+            # Install dependencies.
+            self._env.run(dist_pip + (
+                'install',
+                '--upgrade',
+                '-f', wheels_dir,
+                '-r', 'requirements.txt',
+            ))
+            # Install Plover.
+            # Note: do not use the embedded Python executable with
+            # `setup.py install` to prevent setuptools from installing
+            # extra development dependencies...
+            self._env.run(('python.exe', 'setup.py', 'bdist_wheel'))
+            self._env.run(dist_pip + (
+                'install',
+                '--no-deps',
+                '--ignore-installed',
+                glob.glob('dist/plover-*.whl')[0],
+            ))
+            # List installed packages.
+            self._env.run(dist_pip + ('list',))
+            # Trim the fat...
+            for pattern in '''
+            Lib/site-packages/PyQt5/**/*AxContainer*
+            Lib/site-packages/PyQt5/**/*Bluetooth*
+            Lib/site-packages/PyQt5/**/*CLucene*
+            Lib/site-packages/PyQt5/**/*DBus*
+            Lib/site-packages/PyQt5/**/*Designer*
+            Lib/site-packages/PyQt5/**/*Help*
+            Lib/site-packages/PyQt5/**/*Location*
+            Lib/site-packages/PyQt5/**/*Multimedia*
+            Lib/site-packages/PyQt5/**/*Network*
+            Lib/site-packages/PyQt5/**/*Nfc*
+            Lib/site-packages/PyQt5/**/*OpenGL*
+            Lib/site-packages/PyQt5/**/*Position*
+            Lib/site-packages/PyQt5/**/*Print*
+            Lib/site-packages/PyQt5/**/*Qml*
+            Lib/site-packages/PyQt5/**/*Quick*
+            Lib/site-packages/PyQt5/**/*Sensors*
+            Lib/site-packages/PyQt5/**/*Serial*
+            Lib/site-packages/PyQt5/**/*Sql*
+            Lib/site-packages/PyQt5/**/*Test*
+            Lib/site-packages/PyQt5/**/*Web*
+            Lib/site-packages/PyQt5/**/*WinExtras*
+            Lib/site-packages/PyQt5/**/*Xml*
+            Lib/site-packages/PyQt5/**/*qtwebengine*
+            Lib/site-packages/PyQt5/Qt/bin/libeay32.dll
+            Lib/site-packages/PyQt5/Qt/bin/ssleay32.dll
+            Lib/site-packages/PyQt5/Qt/plugins/audio
+            Lib/site-packages/PyQt5/Qt/plugins/bearer
+            Lib/site-packages/PyQt5/Qt/plugins/generic
+            Lib/site-packages/PyQt5/Qt/plugins/geoservices
+            Lib/site-packages/PyQt5/Qt/plugins/mediaservice
+            Lib/site-packages/PyQt5/Qt/plugins/playlistformats
+            Lib/site-packages/PyQt5/Qt/plugins/position
+            Lib/site-packages/PyQt5/Qt/plugins/printsupport
+            Lib/site-packages/PyQt5/Qt/plugins/sceneparsers
+            Lib/site-packages/PyQt5/Qt/plugins/sensor*
+            Lib/site-packages/PyQt5/Qt/plugins/sqldrivers
+            Lib/site-packages/PyQt5/Qt/qml
+            Lib/site-packages/PyQt5/Qt/resources
+            Lib/site-packages/PyQt5/Qt/translations/qt_help_*
+            Lib/site-packages/PyQt5/Qt/translations/qtconnectivity_*
+            Lib/site-packages/PyQt5/Qt/translations/qtdeclarative_*
+            Lib/site-packages/PyQt5/Qt/translations/qtlocation_*
+            Lib/site-packages/PyQt5/Qt/translations/qtmultimedia_*
+            Lib/site-packages/PyQt5/Qt/translations/qtquick*
+            Lib/site-packages/PyQt5/Qt/translations/qtserialport_*
+            Lib/site-packages/PyQt5/Qt/translations/qtwebsockets_*
+            Lib/site-packages/PyQt5/pylupdate*
+            Lib/site-packages/PyQt5/pyrcc*
+            Lib/site-packages/PyQt5/uic
+            Lib/site-packages/plover/gui_qt/*.ui
+            Lib/site-packages/plover/gui_qt/messages/**/*.po
+            Lib/site-packages/plover/gui_qt/messages/plover.pot
+            Lib/site-packages/plover/gui_qt/resources
+            Scripts
+            '''.split():
+                pattern = os.path.join(dist_dir, pattern)
+                for path in reversed(glob.glob(pattern, recursive=True)):
+                    if self.verbose:
+                        print('removing', path)
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    else:
+                        os.unlink(path)
+            # Create launcher.
+            self._env.run(dist_py + ('-c', ';'.join(
+                '''
+                from pip._vendor.distlib.scripts import ScriptMaker
+                sm = ScriptMaker(source_dir='{dist_dir}', target_dir='{dist_dir}')
+                sm.executable = 'python.exe'
+                sm.variants = set(('',))
+                sm.make('plover = plover.main:main', options={{'gui': True}})
+                '''.format(dist_dir=dist_dir).strip().split('\n'))))
+            # Make distribution source-less.
+            self._env.run(dist_py + (
+                '-m', 'utils.source_less',
+                # Don't touch pip._vendor.distlib sources,
+                # or `pip install` will not be usable...
+                dist_dir, '*/pip/_vendor/distlib/*',
+            ))
+            # Zip results.
+            self._zipdir(dist_dir)
 
     def main(self, args):
         opts = self._parser.parse_args(args)
