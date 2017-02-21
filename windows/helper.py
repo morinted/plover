@@ -666,15 +666,21 @@ class Helper(object):
                         shutil.rmtree(path)
                     else:
                         os.unlink(path)
-            # Create launcher.
-            self._env.run(dist_py + ('-c', ';'.join(
-                '''
-                from pip._vendor.distlib.scripts import ScriptMaker
-                sm = ScriptMaker(source_dir='{dist_dir}', target_dir='{dist_dir}')
-                sm.executable = 'python.exe'
-                sm.variants = set(('',))
-                sm.make('plover = plover.main:main', options={{'gui': True}})
-                '''.format(dist_dir=dist_dir).strip().split('\n'))))
+            # Create launchers.
+            for entrypoint, gui in (
+                ('plover         = plover.main:main', True ),
+                ('plover_console = plover.main:main', False),
+            ):
+                self._env.run(dist_py + ('-c', ';'.join(
+                    '''
+                    from pip._vendor.distlib.scripts import ScriptMaker
+                    sm = ScriptMaker(source_dir='{dist_dir}', target_dir='{dist_dir}')
+                    sm.executable = 'python.exe'
+                    sm.variants = set(('',))
+                    sm.make('{entrypoint}', options={{'gui': {gui}}})
+                    '''.format(dist_dir=dist_dir,
+                               entrypoint=entrypoint,
+                               gui=gui).strip().split('\n'))))
             # Make distribution source-less.
             self._env.run(dist_py + (
                 '-m', 'utils.source_less',
