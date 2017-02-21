@@ -668,8 +668,9 @@ class Helper(object):
                         os.unlink(path)
             # Create launchers.
             for entrypoint, gui in (
-                ('plover         = plover.main:main', True ),
-                ('plover_console = plover.main:main', False),
+                ('plover                = plover.main:main'                  , True ),
+                ('plover_console        = plover.main:main'                  , False),
+                ('plover_plugin_install = plover.scripts.plugin_install:main', False),
             ):
                 self._env.run(dist_py + ('-c', ';'.join(
                     '''

@@ -1,4 +1,5 @@
 
+from distutils.dist import Distribution
 import sys
 import os
 
@@ -53,8 +54,14 @@ class Registry(object):
 
     def load_plugins(self, plugins_dir=PLUGINS_DIR):
         log.info('loading plugins from %s', plugins_dir)
+        directories = [plugins_dir]
+        # Add platform / python version specific directory too.
+        i = Distribution().get_command_obj('install', create=True)
+        i.prefix = os.path.join(PLUGINS_DIR, PLUGINS_PLATFORM)
+        i.finalize_options()
+        directories.append(i.install_lib)
         working_set = pkg_resources.working_set
-        environment = pkg_resources.Environment([plugins_dir])
+        environment = pkg_resources.Environment(directories)
         distributions, errors = working_set.find_plugins(environment)
         if errors:
             log.error("error(s) while loading plugins: %s", errors)

@@ -483,6 +483,7 @@ if __name__ == '__main__':
             'plover.gui_qt',
             'plover.machine',
             'plover.oslayer',
+            'plover.scripts',
             'plover.system',
         ],
         data_files=[
