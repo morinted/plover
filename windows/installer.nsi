@@ -29,6 +29,8 @@
   !define MUI_ABORTWARNING
   !define MUI_ICON "${srcdir}\plover.ico"
 
+  !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Plover ${version}"
+
 ;--------------------------------
 ;Pages
 
@@ -60,7 +62,7 @@
 ;--------------------------------
 ;Installer Sections
 
-Section "Plover" BfWSection
+Section "Plover ${version}" BfWSection
 
   SetOutPath "$INSTDIR"
 
@@ -74,16 +76,21 @@ Section "Plover" BfWSection
   ;Store installation folder
   WriteRegStr SHCTX "Software\Plover\${version}" "" "$INSTDIR"
   
+  ;Add an entry in "Add/Remove Programs"
+  WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "Plover ${version}"
+  WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\" /$MultiUser.InstallMode"
+  WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /$MultiUser.InstallMode /S"
+
+  ;Create shortcuts
+  !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover ${version}.lnk" "$INSTDIR\plover.exe" "" "$INSTDIR\plover.ico"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover ${version} (debug).lnk" "$INSTDIR\plover_console.exe" "-l debug" "$INSTDIR\plover.ico"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Plover ${version}.lnk" "$INSTDIR\uninstall.exe /$MultiUser.InstallMode"
+  !insertmacro MUI_STARTMENU_WRITE_END
+
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
-
-  !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
-    ;Create shortcuts
-    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover.lnk" "$INSTDIR\plover.exe" "" "$INSTDIR\plover.ico"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover (debug).lnk" "$INSTDIR\plover_console.exe" "-l debug" "$INSTDIR\plover.ico"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninstall.exe"
-  !insertmacro MUI_STARTMENU_WRITE_END
 
 SectionEnd
 
@@ -99,8 +106,6 @@ SectionEnd
 
 Section "Uninstall"
 
-  ;ADD YOUR OWN FILES HERE...
-
   RMDir /r "$INSTDIR\data"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\plover.exe"
@@ -111,11 +116,12 @@ Section "Uninstall"
   RMDir "$INSTDIR"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
-  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
-  Delete "$SMPROGRAMS\$StartMenuFolder\Plover.lnk"
-  Delete "$SMPROGRAMS\$StartMenuFolder\Plover (debug).lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall Plover ${version}.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Plover ${version}.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Plover ${version} (debug).lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
  
+  DeleteRegKey SHCTX "${UNINST_KEY}"
   DeleteRegKey /ifempty SHCTX "Software\Plover\${version}"
   DeleteRegKey /ifempty SHCTX "Software\Plover"
 
