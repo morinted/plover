@@ -569,13 +569,14 @@ class Helper(object):
             py_embedded = download('https://www.python.org/ftp/python/3.5.2/python-3.5.2-embed-win32.zip',
                                    'a62675cd88736688bb87999e8b86d13ef2656312')
             dist_dir = os.path.join('dist', 'plover-%s-py3' % __version__)
-            stdlib = os.path.join(dist_dir, 'python35.zip')
-            os.makedirs(dist_dir)
+            data_dir = os.path.join(dist_dir, 'data')
+            stdlib = os.path.join(data_dir, 'python35.zip')
+            os.makedirs(data_dir)
             for path in (py_embedded, stdlib):
                 with zipfile.ZipFile(path) as zip:
-                    zip.extractall(dist_dir)
+                    zip.extractall(data_dir)
             os.unlink(stdlib)
-            dist_py = (os.path.join(dist_dir, 'python.exe'),)
+            dist_py = (os.path.join(data_dir, 'python.exe'),)
             # Install pip.
             get_pip = download('https://bootstrap.pypa.io/get-pip.py',
                                '3d45cef22b043b2b333baa63abaa99544e9c031d')
@@ -658,7 +659,7 @@ class Helper(object):
             Lib/site-packages/plover/gui_qt/resources
             Scripts
             '''.split():
-                pattern = os.path.join(dist_dir, pattern)
+                pattern = os.path.join(data_dir, pattern)
                 for path in reversed(glob.glob(pattern, recursive=True)):
                     if self.verbose:
                         print('removing', path)
@@ -683,7 +684,7 @@ class Helper(object):
                     '''
                     from pip._vendor.distlib.scripts import ScriptMaker
                     sm = ScriptMaker(source_dir='{dist_dir}', target_dir='{dist_dir}')
-                    sm.executable = 'python.exe'
+                    sm.executable = 'data\\python.exe'
                     sm.variants = set(('',))
                     sm.make('{entrypoint}', options={{'gui': {gui}}})
                     '''.format(dist_dir=dist_dir,
@@ -694,7 +695,7 @@ class Helper(object):
                 '-m', 'utils.source_less',
                 # Don't touch pip._vendor.distlib sources,
                 # or `pip install` will not be usable...
-                dist_dir, '*/pip/_vendor/distlib/*',
+                data_dir, '*/pip/_vendor/distlib/*',
             ))
             # Zip results.
             self._zipdir(dist_dir)
