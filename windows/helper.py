@@ -666,6 +666,13 @@ class Helper(object):
                         shutil.rmtree(path)
                     else:
                         os.unlink(path)
+            # Add miscellaneous files: icon, license, ...
+            for src in (
+                'LICENSE.txt',
+                'plover/assets/plover.ico',
+            ):
+                dst = os.path.join(dist_dir, os.path.basename(src))
+                self._copyfile(src, dst)
             # Create launchers.
             for entrypoint, gui in (
                 ('plover                = plover.main:main'                  , True ),
