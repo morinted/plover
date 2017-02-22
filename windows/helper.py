@@ -545,6 +545,8 @@ class Helper(object):
 
         def cmd_newdist(self, keep=False):
             '''create windows distribution
+
+            keep: don't remove build/dist directories at start
             '''
             from plover import __version__
             if not keep:
