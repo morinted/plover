@@ -27,6 +27,8 @@
 ;Interface Settings
 
   !define MUI_ABORTWARNING
+  !define MUI_WELCOMEFINISHPAGE_BITMAP "windows\installer.bmp"
+  !define MUI_WELCOMEFINISHPAGE_BITMAP_NOSTRETCH
   !define MUI_ICON "${srcdir}\plover.ico"
 
   !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Plover ${version}"
