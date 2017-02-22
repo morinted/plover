@@ -543,10 +543,11 @@ class Helper(object):
 
     if PY3:
 
-        def cmd_newdist(self, keep=False):
+        def cmd_newdist(self, keep=False, zipdir=False):
             '''create windows distribution
 
             keep: don't remove build/dist directories at start
+            zipdir: create a zip of the resulting directory
             '''
             from plover import __version__
             if not keep:
@@ -700,7 +701,8 @@ class Helper(object):
                 data_dir, '*/pip/_vendor/distlib/*',
             ))
             # Zip results.
-            self._zipdir(dist_dir)
+            if zipdir:
+                self._zipdir(dist_dir)
 
     def main(self, args):
         opts = self._parser.parse_args(args)
