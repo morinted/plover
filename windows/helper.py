@@ -543,7 +543,7 @@ class Helper(object):
 
     if PY3:
 
-        def cmd_newdist(self, keep=False, zipdir=False):
+        def cmd_newdist(self, keep=False, installer=False, zipdir=False):
             '''create windows distribution
 
             keep: don't remove build/dist directories at start
@@ -703,6 +703,15 @@ class Helper(object):
             # Zip results.
             if zipdir:
                 self._zipdir(dist_dir)
+            if installer:
+                setup = os.path.join('dist', 'plover-%s-py3.setup.exe' % __version__)
+                print('creating installer', setup)
+                self._env.run((
+                    'makensis', '-NOCD',
+                    '-Dsrcdir=' + dist_dir,
+                    '-Dversion=' + __version__,
+                    'windows/installer.nsi',
+                    '-XOutFile ' + setup))
 
     def main(self, args):
         opts = self._parser.parse_args(args)
