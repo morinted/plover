@@ -67,8 +67,7 @@ build_script:
   - "python setup.py build"
 
 after_build:
-  - ps: "if ($Env:PYTHON_VERSION -eq \"3.5\") { python windows\\helper.py dist }"
-  - ps: "if ($Env:PYTHON_VERSION -eq \"3.5\") { python windows\\helper.py newdist -k }"
+  - ps: "if ($Env:PYTHON_VERSION -eq \"3.5\") { python windows\\helper.py newdist -z -i }"
 
 test_script:
   - "python setup.py test"
@@ -76,8 +75,8 @@ test_script:
 artifacts:
 
   - path: dist\*.exe
-    name: single-file distribution
+    name: installer
 
   - path: dist\*.zip
-    name: multiple-files distribution
+    name: portable zip
 
