@@ -94,7 +94,7 @@ Section "Plover ${version}" BfWSection
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover ${version}.lnk" "$INSTDIR\plover.exe" "" "$INSTDIR\plover.ico"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Plover ${version} (debug).lnk" "$INSTDIR\plover_console.exe" "-l debug" "$INSTDIR\plover.ico"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Plover ${version}.lnk" "$INSTDIR\uninstall.exe /$MultiUser.InstallMode"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Plover ${version}.lnk" "$INSTDIR\uninstall.exe" "/$MultiUser.InstallMode"
   !insertmacro MUI_STARTMENU_WRITE_END
 
   ;Create uninstaller
