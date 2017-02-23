@@ -1,14 +1,14 @@
 ;--------------------------------
 ;Include Modern UI
 
-!define MULTIUSER_EXECUTIONLEVEL Highest
 !define MULTIUSER_MUI
+!define MULTIUSER_EXECUTIONLEVEL Highest
 !define MULTIUSER_INSTALLMODE_COMMANDLINE
 !define MULTIUSER_INSTALLMODE_DEFAULT_REGISTRY_KEY "Software\Plover\${version}"
 !define MULTIUSER_INSTALLMODE_DEFAULT_REGISTRY_VALUENAME ""
+!define MULTIUSER_INSTALLMODE_INSTDIR "Open Steno Project\Plover ${version}"
 !define MULTIUSER_INSTALLMODE_INSTDIR_REGISTRY_KEY "Software\Plover\${version}"
 !define MULTIUSER_INSTALLMODE_INSTDIR_REGISTRY_VALUENAME ""
-!define MULTIUSER_INSTALLMODE_INSTDIR "Plover ${version}"
 !include MultiUser.nsh
 !include MUI2.nsh
 
