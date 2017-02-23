@@ -706,10 +706,15 @@ class Helper(object):
             if installer:
                 setup = os.path.join('dist', 'plover-%s-py3.setup.exe' % __version__)
                 print('creating installer', setup)
+                # Compute install size for "Add/Remove Programs" entry.
+                install_size = sum(os.path.getsize(os.path.join(dirpath, f))
+                                   for dirpath, dirnames, filenames
+                                   in os.walk("dist") for f in filenames)
                 self._env.run((
                     'makensis', '-NOCD',
                     '-Dsrcdir=' + dist_dir,
                     '-Dversion=' + __version__,
+                    '-Dinstall_size=' + str(install_size // 1024),
                     'windows/installer.nsi',
                     '-XOutFile ' + setup))
 

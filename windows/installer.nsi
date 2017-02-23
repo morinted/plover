@@ -80,6 +80,12 @@ Section "Plover ${version}" BfWSection
   
   ;Add an entry in "Add/Remove Programs"
   WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "Plover ${version}"
+  WriteRegStr SHCTX "${UNINST_KEY}" "DisplayVersion" "${version}"
+  WriteRegStr SHCTX "${UNINST_KEY}" "Publisher" "Open Steno Project"
+  WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\plover.ico"
+  WriteRegDWORD SHCTX "${UNINST_KEY}" "NoModify" 1
+  WriteRegDWORD SHCTX "${UNINST_KEY}" "NoRepair" 1
+  WriteRegDWORD SHCTX "${UNINST_KEY}" "EstimatedSize" ${install_size}
   WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\" /$MultiUser.InstallMode"
   WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /$MultiUser.InstallMode /S"
 
