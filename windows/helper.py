@@ -585,22 +585,16 @@ class Helper(object):
                                '3d45cef22b043b2b333baa63abaa99544e9c031d')
             self._env.run(dist_py + (get_pip,))
             dist_pip = dist_py + ('-m', 'pip')
-            # Install dependencies.
-            self._env.run(dist_pip + (
-                'install',
-                '--upgrade',
-                '-f', wheels_dir,
-                '-r', 'requirements.txt',
-            ))
-            # Install Plover.
+            # Install Plover and dependencies.
             # Note: do not use the embedded Python executable with
             # `setup.py install` to prevent setuptools from installing
             # extra development dependencies...
             self._env.run(('python.exe', 'setup.py', 'bdist_wheel'))
             self._env.run(dist_pip + (
                 'install',
-                '--no-deps',
-                '--ignore-installed',
+                '--upgrade',
+                '-f', wheels_dir,
+                '-r', 'requirements.txt',
                 glob.glob('dist/plover-*.whl')[0],
             ))
             # List installed packages.
