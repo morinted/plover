@@ -69,11 +69,13 @@ wheels_install()
 
 osx_bootstrap()
 {
+  # dmgbuild is installed through Homebrew to avoid dealing with python2 directly.
+  brew tap morinted/homebrew-dmgbuild
   run brew update
-  run export HOMEBREW_NO_AUTO_UPDATE=1
-  run git -C "$(brew --repo)/Library/Taps/homebrew/homebrew-core" checkout '5596439c4ca5a9963a7fec0146d3ce2b27e07a17^' Formula/python3.rb
   osx_packages_install $python
   run brew link --overwrite $python
+  osx_packages_install coreutils # Used in construction of .app
+  osx_packages_install dmgbuild
 }
 
 osx_packages_install()

@@ -344,29 +344,24 @@ class Test(Command):
         sys.exit(main())
 
 
-class BinaryDistApp(PyInstallerDist):
-    description = 'create an application for OSX'
-    extra_args = [
-        '--icon=osx/plover.icns',
-        '--osx-bundle-identifier=org.openstenoproject.plover',
-    ]
+class BinaryDistApp(Command):
+
+    user_options = []
+    extra_args = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
 
     def run(self):
-        PyInstallerDist.run(self)
-        # Patch Info.plist.
-        plist_info_fname = 'dist/%s.app/Contents/Info.plist' % PACKAGE
-        tree = ElementTree.parse(plist_info_fname)
-        dictionary = tree.getroot().find('dict')
-        for name, value in (
-            # Enable retina display support.
-            ('key'   , 'NSPrincipalClass'),
-            ('string', 'NSApplication'   ),
-        ):
-            element = Element(name)
-            element.text = value
-            element.tail = '\n'
-            dictionary.append(element)
-        tree.write(plist_info_fname)
+        self.run_command('bdist_wheel')
+        whl_cmd = self.get_finalized_command('bdist_wheel')
+        wheel_path = whl_cmd.get_archive_basename()
+        cmd = 'bash -x osx/make_app.sh %s %s' % (wheel_path, PACKAGE)
+        log.info('running %s', cmd)
+        subprocess.check_call(cmd.split())
 
 
 class BinaryDistDmg(Command):
@@ -382,9 +377,7 @@ class BinaryDistDmg(Command):
 
     def run(self):
         self.run_command('bdist_app')
-        app = 'dist/%s.app' % PACKAGE
-        dmg = 'dist/%s.dmg' % PACKAGE
-        cmd = 'bash -x osx/app2dmg.sh %s %s' % (app, dmg)
+        cmd = 'dmgbuild -s osx/dmg_settings.py Plover dist/%s.dmg' % (PACKAGE)
         log.info('running %s', cmd)
         subprocess.check_call(cmd.split())
 
@@ -434,7 +427,7 @@ entrypoints = {
 }
 
 if sys.platform.startswith('darwin'):
-    setup_requires.append('PyInstaller==3.1.1')
+    setup_requires.append('macholib')
     cmdclass['bdist_app'] = BinaryDistApp
     cmdclass['bdist_dmg'] = BinaryDistDmg
 
