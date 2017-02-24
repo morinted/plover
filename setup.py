@@ -368,6 +368,7 @@ extras_require = {
         'pyobjc-framework-Cocoa==3.1.1+plover2',
         'pyobjc-framework-Quartz==3.1.1',
         'appnope>=0.1.0',
+        'PyQt5',
     ],
     'gui_qt': [
         'PyQt5',
