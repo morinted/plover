@@ -43,7 +43,18 @@ install_name_tool -change $python3_dir/Python @executable_path/lib${target_pytho
 chmod 777 lib${target_python}.dylib
 install_name_tool -id @executable_path/lib${target_python}.dylib lib${target_python}.dylib
 
+cd ../..
+python3 setup.py write_requirements
+pip3 install -r requirements.txt -c requirements_constraints.txt
+python3 setup.py bdist_wheel
+
+cd $target_dir
+
 ./$target_python -m venv plover-env
 source plover-env/bin/activate
 
 /usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string "org.python.python"' ./plover-env/bin/Info.plist
+
+plover_wheel=$(find ../../dist -name '*.whl')
+
+pip install $plover_wheel -c ../../requirements_constraints.txt
