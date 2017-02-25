@@ -224,30 +224,21 @@ class Test(Command):
         sys.exit(main())
 
 
-class BinaryDistApp(PyInstallerDist):
-    description = 'create an application for OSX'
-    extra_args = [
-        '--icon=osx/plover.icns',
-        '--osx-bundle-identifier=org.openstenoproject.plover',
-    ]
+class BinaryDistApp(Command):
+
+    user_options = []
+    extra_args = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
 
     def run(self):
-        PyInstallerDist.run(self)
-        # Patch Info.plist.
-        plist_info_fname = 'dist/%s.app/Contents/Info.plist' % PACKAGE
-        tree = ElementTree.parse(plist_info_fname)
-        dictionary = tree.getroot().find('dict')
-        for name, value in (
-            # Enable retina display support.
-            ('key'   , 'NSPrincipalClass'),
-            ('string', 'NSApplication'   ),
-        ):
-            element = Element(name)
-            element.text = value
-            element.tail = '\n'
-            dictionary.append(element)
-        tree.write(plist_info_fname)
-
+        cmd = 'bash -x osx/make_app.sh'
+        log.info('running %s', cmd)
+        subprocess.check_call(cmd.split())
 
 class BinaryDistDmg(Command):
 
