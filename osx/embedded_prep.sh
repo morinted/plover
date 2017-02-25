@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+osx_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 python3_location=$(greadlink -f $(which python3))
 pip3=$(greadlink -f $(which pip3))
 pyvenv3=$(greadlink -f $(which pyvenv))
@@ -8,14 +10,19 @@ python3_dir=$(dirname $python3_bin_dir)
 
 py_version=$(basename $python3_dir)
 
-target_dir=$(pwd)/build_app
+plover_dir=$(dirname $osx_dir)
+app_dir=$plover_dir/build/Plover.app
 
 target_python=python${py_version}
 target_pip=pip${py_version}
 target_pyvenv=pyvenv-${py_version}
 
-rm -rf $target_dir
-mkdir $target_dir
+target_dir=$app_dir/Contents/Frameworks
+
+rm -rf $app_dir
+mkdir -p $app_dir/Contents/Frameworks
+mkdir $app_dir/Contents/MacOS
+mkdir $app_dir/Contents/Resources
 
 cd $target_dir
 
@@ -25,13 +32,6 @@ cp -R $python3_dir/lib $target_dir/lib
 rm $target_dir/lib/lib${target_python}.dylib
 rm $target_dir/lib/lib${target_python}m.dylib
 rm -r $target_dir/lib/pkgconfig
-
-# Get pip and pvenv over here
-cp $pip3 $target_dir/$target_pip
-cp $pyvenv3 $target_dir/$target_pyvenv
-# Replace their shebang with local python
-sed -i '' "1s/.*/#!.\/$target_python/" $target_pip
-sed -i '' "1s/.*/#!.\/$target_python/" $target_pyvenv
 
 # Launcher
 cp $python3_dir/Resources/Python.app/Contents/MacOS/Python $target_dir/${target_python}
@@ -43,18 +43,39 @@ install_name_tool -change $python3_dir/Python @executable_path/lib${target_pytho
 chmod 777 lib${target_python}.dylib
 install_name_tool -id @executable_path/lib${target_python}.dylib lib${target_python}.dylib
 
-cd ../..
+cd $plover_dir
 python3 setup.py write_requirements
 pip3 install -r requirements.txt -c requirements_constraints.txt
 python3 setup.py bdist_wheel
 
-cd $target_dir
+$target_dir/$target_python -m venv $app_dir/Contents/MacOS
+source $app_dir/Contents/MacOS/bin/activate
 
-./$target_python -m venv plover-env
-source plover-env/bin/activate
+plover_wheel=$(find $plover_dir/dist -name '*.whl')
+pip install $plover_wheel -c $plover_dir/requirements_constraints.txt
 
-/usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string "org.python.python"' ./plover-env/bin/Info.plist
+# Copy icon
+cp $osx_dir/plover.icns $app_dir/Contents/Resources/plover.icns
 
-plover_wheel=$(find ../../dist -name '*.whl')
+# Get current version
+plover_version=$(python -c "from plover import __version__; print(__version__)")
 
-pip install $plover_wheel -c ../../requirements_constraints.txt
+# This allows notifications to identify as from Plover.
+/usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string "org.openstenoproject.plover"' $app_dir/Contents/MacOS/bin/Info.plist
+
+# Setup PList for our .app
+/usr/libexec/PlistBuddy -c 'Add :CFBundleDevelopmentRegion string "en"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleIconFile string "plover.icns"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string "org.openstenoproject.plover"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleName string "Plover"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string "Plover"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleExecutable string "MacOS/bin/plover"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundlePackageType string "APPL"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string \"$plover_version\"" $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string \"$plover_version\"" $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :CFBundleInfoDictionaryVersion string "6.0"' $app_dir/Contents/Info.plist
+year=$(date '+%Y')
+copyright="© $year, Open Steno Project"
+/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string \"$copyright\"" $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :NSPrincipalClass string "NSApplication"' $app_dir/Contents/Info.plist
+/usr/libexec/PlistBuddy -c 'Add :NSAppSleepDisabled bool true' $app_dir/Contents/Info.plist
