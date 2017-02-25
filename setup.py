@@ -253,7 +253,7 @@ class BinaryDistDmg(Command):
 
     def run(self):
         self.run_command('bdist_app')
-        app = 'dist/%s.app' % PACKAGE
+        app = 'dist/Plover.app'
         dmg = 'dist/%s.dmg' % PACKAGE
         cmd = 'bash -x osx/app2dmg.sh %s %s' % (app, dmg)
         log.info('running %s', cmd)

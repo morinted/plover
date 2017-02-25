@@ -18,7 +18,7 @@ mpoint="$tmpdir/plover_mountpoint"
 [ -r "$app" ]
 mkdir -p "$tmpdir"
 gunzip -c osx/plover_template.dmg.gz >"$tmpdmg"
-hdiutil resize -size 100m "$tmpdmg"
+hdiutil resize -size 150m "$tmpdmg"
 mkdir "$mpoint"
 hdiutil attach "$tmpdmg" -noautoopen -quiet -mountpoint "$mpoint"
 rm -rf "$mpoint"/*.app
