@@ -29,9 +29,7 @@ def trim_extras(target_dir):
     site-packages/PyQt5/**/*Multimedia*
     site-packages/PyQt5/**/*Network*
     site-packages/PyQt5/**/*Nfc*
-    site-packages/PyQt5/**/*OpenGL*
     site-packages/PyQt5/**/*Position*
-    site-packages/PyQt5/**/*Print*
     site-packages/PyQt5/**/*Qml*
     site-packages/PyQt5/**/*Quick*
     site-packages/PyQt5/**/*Sensors*
@@ -39,7 +37,6 @@ def trim_extras(target_dir):
     site-packages/PyQt5/**/*Sql*
     site-packages/PyQt5/**/*Test*
     site-packages/PyQt5/**/*Web*
-    site-packages/PyQt5/**/*WinExtras*
     site-packages/PyQt5/**/*Xml*
     site-packages/PyQt5/**/*qtwebengine*
     site-packages/PyQt5/Qt/bin/*eay32.dll
