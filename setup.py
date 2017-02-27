@@ -236,7 +236,10 @@ class BinaryDistApp(Command):
         pass
 
     def run(self):
-        cmd = 'bash -x osx/make_app.sh'
+        self.run_command('bdist_wheel')
+        whl_cmd = self.get_finalized_command('bdist_wheel')
+        plover_whl = whl_cmd.get_archive_basename() + '.whl'
+        cmd = 'bash -x osx/make_app.sh %s' % (plover_whl)
         log.info('running %s', cmd)
         subprocess.check_call(cmd.split())
 
@@ -272,7 +275,7 @@ kwargs = {}
 build_dependencies = []
 
 if sys.platform.startswith('darwin'):
-    setup_requires.append('PyInstaller==3.1.1')
+    setup_requires.append('macholib')
     cmdclass['bdist_app'] = BinaryDistApp
     cmdclass['bdist_dmg'] = BinaryDistDmg
 

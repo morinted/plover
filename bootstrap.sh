@@ -87,10 +87,9 @@ osx_bootstrap()
     python_package='python'
   else
     python_package="$python"
-    run export HOMEBREW_NO_AUTO_UPDATE=1
-    run git -C "$(brew --repo)/Library/Taps/homebrew/homebrew-core" checkout '5596439c4ca5a9963a7fec0146d3ce2b27e07a17^' Formula/python3.rb
   fi
   osx_packages_install $python_package
+  osx_packages_install coreutils # Used in construction of .app
   run brew link --overwrite $python_package
 }
 
