@@ -81,6 +81,8 @@ pip_install_requirements()
 
 osx_bootstrap()
 {
+  # dmgbuild is installed through Homebrew to avoid dealing with python2 directly.
+  brew tap morinted/homebrew-dmgbuild
   run brew update
   if [ "$python" == 'python2' ]
   then
@@ -90,6 +92,7 @@ osx_bootstrap()
   fi
   osx_packages_install $python_package
   osx_packages_install coreutils # Used in construction of .app
+  osx_packages_install dmgbuild
   run brew link --overwrite $python_package
 }
 

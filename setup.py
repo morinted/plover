@@ -238,10 +238,11 @@ class BinaryDistApp(Command):
     def run(self):
         self.run_command('bdist_wheel')
         whl_cmd = self.get_finalized_command('bdist_wheel')
-        plover_whl = whl_cmd.get_archive_basename() + '.whl'
-        cmd = 'bash -x osx/make_app.sh %s' % (plover_whl)
+        wheel_path = whl_cmd.get_archive_basename()
+        cmd = 'bash -x osx/make_app.sh %s %s' % (wheel_path, PACKAGE)
         log.info('running %s', cmd)
         subprocess.check_call(cmd.split())
+
 
 class BinaryDistDmg(Command):
 
@@ -256,9 +257,7 @@ class BinaryDistDmg(Command):
 
     def run(self):
         self.run_command('bdist_app')
-        app = 'dist/Plover.app'
-        dmg = 'dist/%s.dmg' % PACKAGE
-        cmd = 'bash -x osx/app2dmg.sh %s %s' % (app, dmg)
+        cmd = 'dmgbuild -s osx/dmg_settings.py Plover dist/%s.dmg' % (PACKAGE)
         log.info('running %s', cmd)
         subprocess.check_call(cmd.split())
 
