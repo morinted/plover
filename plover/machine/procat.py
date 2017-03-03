@@ -7,6 +7,7 @@
 from six import iterbytes
 
 from plover.machine.base import SerialStenotypeBase
+from plover import log
 
 """
 ProCAT machines send 4 bytes per stroke, with the last byte only consisting of
@@ -42,6 +43,8 @@ class ProCAT(SerialStenotypeBase):
             raw = self.serial_port.read(BYTES_PER_STROKE)
             if not raw:
                 continue
+            log.info('Got steno from ProCAT')
+            log.info(raw)
 
             # Convert the raw to a list of steno keys.
             steno_keys = self.keymap.keys_to_actions(
