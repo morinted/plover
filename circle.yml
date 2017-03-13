@@ -1,0 +1,38 @@
+# https://discuss.circleci.com/t/python-pip-dependencies-are-not-cached-reinstalled-every-time/6965
+machine:
+  pre:
+    - sudo -H pip install --upgrade virtualenv
+  environment:
+    PYTHON: python3
+  xcode:
+    version: 8.2
+
+dependencies:
+  override:
+    - ./bootstrap.sh
+  cache_directories:
+    - ~/Library/Caches/pip
+
+compile:
+  pre:
+    - |
+      (
+      set -ex
+      # List installed packages versions.
+      $PYTHON -m pip list --format=columns
+      # For some reason, pyrcc5/pyuic55 are not found,
+      # so just use the right Python modules directly.
+      sed -i '' \
+        -e 's/"pyrcc5"/"'$PYTHON' -m PyQt5.pyrcc_main"/' \
+        -e 's/"pyuic5"/"'$PYTHON' -m PyQt5.uic.pyuic"/' \
+        pyuic.json
+      )
+  override:
+    - $PYTHON setup.py bdist_dmg
+  post:
+    - mv dist/*.dmg $CIRCLE_ARTIFACTS
+
+test:
+  override:
+    - "true"
+
