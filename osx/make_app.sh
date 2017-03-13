@@ -21,6 +21,7 @@ echo "System python3 is found at: $python3_dir"
 
 # App to build
 app_dir=$plover_dir/build/$PACKAGE.app
+stripped_dir=$plover_dir/build/$PACKAGE_stripped.app
 app_dist_dir=$plover_dir/dist/Plover.app
 # E.g. python3.6 (name of python executable)
 target_python=python${py_version}
@@ -43,8 +44,8 @@ python3 -m macholib standalone $app_dir
 python_home=$target_dir/Python.framework/Versions/$py_version/
 # We want pip to install packages to $target_libs
 target_libs=$python_home/lib/$target_python
-# Replace symlink site-packages with real folder
-rm $target_libs/site-packages
+# Delete system site-packages
+rm -rf $target_libs/site-packages
 mkdir $target_libs/site-packages
 # Add sitecustomize.py -- adds the above site-packages to our Python's sys.path
 cp $plover_dir/osx/sitecustomize.py $target_libs/sitecustomize.py
@@ -117,5 +118,8 @@ python3 -m utils.source_less $target_libs */pip/_vendor/distlib/*
 # Trim big PyQt5 pieces
 python3 -m utils.trim $target_libs osx/dist_blacklist.txt
 
+# Strip 32-bit support
+ditto -v --arch x86_64 $app_dir $stripped_dir
+rm -rf $app_dir
 rm -rf $app_dist_dir
-mv $app_dir $app_dist_dir
+mv $stripped_dir $app_dist_dir
