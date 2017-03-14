@@ -86,6 +86,7 @@ osx_bootstrap()
   # Used in construction of .app
   osx_packages_install coreutils
   osx_packages_install dmgbuild # stuck on Python 2
+  wheels_install certifi
 }
 
 osx_packages_install()
