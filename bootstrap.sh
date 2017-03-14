@@ -289,5 +289,6 @@ wheels_install --user Cython
 # Generate requirements.
 run "$python" setup.py write_requirements
 wheels_install --user -c requirements_constraints.txt -r requirements.txt
+run "$python" -c 'import os, site; user_bin = os.path.join(site.USER_BASE, "bin"); home = os.path.expanduser("~/"); user_bin = os.path.join("~", user_bin[len(home):]) if user_bin.startswith(home) else user_bin; print("Note: please make sure %s is in your $PATH!" % user_bin)'
 
 # vim: foldmethod=marker
