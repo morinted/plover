@@ -1,4 +1,8 @@
 #!/bin/sh
 
-cd "$(dirname "$(readlink -e "$0")")" &&
-exec ./setup.py launch -- "$@"
+python="python3"
+
+# No `readlink -e` on macOS...
+cd "$("$python" -c "import os; print(os.path.dirname(os.path.realpath('$0')))")"
+
+exec "$python" ./setup.py launch -- "$@"
