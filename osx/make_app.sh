@@ -3,7 +3,7 @@
 # Usage: ./setup.py bdist_app
 # $1: wheel name (assumed to be in dist)
 # $2: package name
-# Script assumes brewed python3
+# Script assumes python3
 set -e
 
 osx_dir=$(dirname "$0")
