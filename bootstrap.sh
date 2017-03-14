@@ -81,11 +81,21 @@ osx_bootstrap()
   fi
   sudo installer -pkg $pythonpkg -target /
   python3 -m pip install wheel
-  # dmgbuild is installed through Homebrew to avoid dealing with python2 directly.
-  brew tap morinted/homebrew-dmgbuild
+
+  # Get dmgbuild
+  dmgbuild="/usr/local/bin/dmgbuild"
+
+  if ! [ -f $dmgbuild ]; then
+    curl -L -o $dmgbuild "https://github.com/morinted/dmgbuild/releases/download/v1.2.1%2Bplover/dmgbuild-1.2.1.pex"
+  fi
+  if [ $(md5 -q $dmgbuild) != "83eeda459adda00b513ec54b0dc17db9" ]; then
+    echo "dmgbuild md5 didn't match"
+    exit 1
+  fi
+  chmod +x $dmgbuild
+
   # Used in construction of .app
   osx_packages_install coreutils
-  osx_packages_install dmgbuild # stuck on Python 2
   wheels_install certifi
 }
 
