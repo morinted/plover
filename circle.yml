@@ -12,6 +12,7 @@ dependencies:
     - ./bootstrap.sh
   cache_directories:
     - ~/Library/Caches/pip
+    - ~/Downloads
 
 compile:
   pre:

@@ -69,13 +69,23 @@ wheels_install()
 
 osx_bootstrap()
 {
+  # Install Python
+  pythonpkg="$HOME/Downloads/python36.pkg"
+
+  if ! [ -f $pythonpkg ]; then
+    curl -o $pythonpkg "https://www.python.org/ftp/python/3.6.0/python-3.6.0-macosx10.6.pkg"
+  fi
+  if [ $(md5 -q $pythonpkg) != "72acb0175e7622dec7e1b160a43b8c42" ]; then
+    echo "Python md5 didn't match"
+    exit 1
+  fi
+  sudo installer -pkg $pythonpkg -target /
+  python3 -m pip install wheel
   # dmgbuild is installed through Homebrew to avoid dealing with python2 directly.
   brew tap morinted/homebrew-dmgbuild
-  run brew update
-  osx_packages_install $python
-  run brew link --overwrite $python
-  osx_packages_install coreutils # Used in construction of .app
-  osx_packages_install dmgbuild
+  # Used in construction of .app
+  osx_packages_install coreutils
+  osx_packages_install dmgbuild # stuck on Python 2
 }
 
 osx_packages_install()
