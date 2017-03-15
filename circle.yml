@@ -19,8 +19,6 @@ compile:
     - |
       (
       set -ex
-      # List installed packages versions.
-      $PYTHON -m pip list --format=columns
       # For some reason, pyrcc5/pyuic55 are not found,
       # so just use the right Python modules directly.
       sed -i '' \
@@ -28,6 +26,9 @@ compile:
         -e 's/"pyuic5"/"'$PYTHON' -m PyQt5.uic.pyuic"/' \
         pyuic.json
       )
+    - $PYTHON -m pip list --format=columns # List installed packages versions.
+    - git fetch --unshallow
+    - $PYTHON setup.py patch_version
   override:
     - $PYTHON setup.py bdist_dmg
   post:
@@ -37,3 +38,12 @@ test:
   override:
     - "true"
 
+deployment:
+  release:
+    tag: /.+/
+    owner: morinted
+    commands:
+      - curl -L https://github.com/aktau/github-release/releases/download/v0.6.2/darwin-amd64-github-release.tar.bz2 -o github-release.tar.bz2
+      - tar xvjf github-release.tar.bz2
+      - ./bin/darwin/amd64/github-release release --user morinted --repo plover --tag $(git describe --tags) --draft
+      - ./bin/darwin/amd64/github-release upload --user morinted --repo plover --tag $(git describe --tags) --file $(find $CIRCLE_ARTIFACTS/*.dmg) --name "$(basename $(find $CIRCLE_ARTIFACTS/*.dmg))"
