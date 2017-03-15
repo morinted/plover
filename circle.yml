@@ -37,3 +37,11 @@ test:
   override:
     - "true"
 
+deployment:
+  release:
+    tag: /.+/
+    owner: morinted
+    commands:
+      - curl -L https://github.com/aktau/github-release/releases/download/v0.6.2/darwin-amd64-github-release.tar.bz2 -o github-release.tar.bz2
+      - tar xvjf github-release.tar.bz2
+      - ./bin/darwin/amd64/github-release release --user morinted --repo plover --tag $(git describe --tags) --draft --file $(find $CIRCLE_ARTIFACTS/*.dmg)
