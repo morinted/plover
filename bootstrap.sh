@@ -94,8 +94,6 @@ osx_bootstrap()
   fi
   chmod +x $dmgbuild
 
-  # Used in construction of .app
-  osx_packages_install coreutils
   wheels_install certifi
 }
 
