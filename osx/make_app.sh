@@ -13,9 +13,8 @@ PACKAGE=$2
 
 echo "Making Plover.app with Plover wheel $plover_wheel"
 
-# Find system Python
-python3_bin_dir=$(dirname $(greadlink -f $(which python3)))
-python3_dir=$(dirname $python3_bin_dir)
+# Find system Python home
+python3_dir=$(python3 -c 'import sys; print(sys.exec_prefix)')
 py_version=$(basename $python3_dir) # e.g. 3.6
 echo "System python3 is found at: $python3_dir"
 
