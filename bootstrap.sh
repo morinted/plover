@@ -80,7 +80,7 @@ osx_bootstrap()
     exit 1
   fi
   sudo installer -pkg $pythonpkg -target /
-  python3 -m pip install wheel
+  run "$python" -m pip install wheel
 
   # Get dmgbuild
   dmgbuild="/usr/local/bin/dmgbuild"
