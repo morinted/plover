@@ -357,7 +357,7 @@ class BinaryDistDmg(Command):
 
     def run(self):
         self.run_command('bdist_app')
-        cmd = 'dmgbuild -s osx/dmg_settings.py Plover dist/%s.dmg' % (PACKAGE)
+        cmd = '.cache/downloads/dmgbuild -s osx/dmg_settings.py Plover dist/%s.dmg' % (PACKAGE)
         log.info('running %s', cmd)
         subprocess.check_call(cmd.split())
 

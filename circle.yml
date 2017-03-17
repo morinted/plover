@@ -7,9 +7,9 @@ machine:
 
 dependencies:
   override:
-    - ./bootstrap.sh
+    - ./bootstrap.sh "$PYTHON"
   cache_directories:
-    - ~/Library/Caches/pip
+    - .cache
     - ~/Downloads
 
 compile:
@@ -25,7 +25,7 @@ compile:
         pyuic.json
       )
     - $PYTHON -m pip list --format=columns # List installed packages versions.
-    - git fetch --unshallow
+    - git fetch --unshallow --quiet
     - $PYTHON setup.py patch_version
   override:
     - $PYTHON setup.py bdist_dmg

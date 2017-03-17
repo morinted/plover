@@ -83,7 +83,8 @@ osx_bootstrap()
   run "$python" -m pip install wheel
 
   # Get dmgbuild
-  dmgbuild="/usr/local/bin/dmgbuild"
+  mkdir -p .cache/downloads
+  dmgbuild=".cache/downloads/dmgbuild"
 
   if ! [ -f $dmgbuild ]; then
     curl -L -o $dmgbuild "https://github.com/morinted/dmgbuild/releases/download/v1.2.1%2Bplover/dmgbuild-1.2.1.pex"

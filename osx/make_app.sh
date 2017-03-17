@@ -13,6 +13,7 @@ PACKAGE=$2
 
 echo "Making Plover.app with Plover wheel $plover_wheel"
 
+
 # Find system Python home
 python3_dir=$(python3 -c 'import sys; print(sys.exec_prefix)')
 py_version=$(basename $python3_dir) # e.g. 3.6
@@ -60,7 +61,7 @@ curl https://bootstrap.pypa.io/get-pip.py | $full_target_python - --prefix=$loca
 
 # Install Plover
 $(cd $plover_dir && python3 setup.py write_requirements) 
-$full_target_python -m pip install --prefix=$local_sys_prefix $plover_wheel -c $plover_dir/requirements_constraints.txt --upgrade
+$full_target_python utils/install_wheels.py --disable-pip-version-check --timeout=5 --retries=2 --prefix=$local_sys_prefix $plover_wheel -c $plover_dir/requirements_constraints.txt --upgrade --ignore-installed
 
 # Make launcher
 plover_executable=MacOS/Plover
