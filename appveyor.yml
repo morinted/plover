@@ -15,7 +15,6 @@ deploy:
   draft: true
   auth_token:
     secure: XgzNSlliEiPTwXeKFbzHgad3JQHjjDzK4yDGXX8zcB82O3Dp+/UNLogZ3Q1ugoSo
-  artifact: executable
   on:
     appveyor_repo_tag: true
 
