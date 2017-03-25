@@ -495,6 +495,7 @@ install_requires = [
     'appdirs>=1.3.0',
     'hidapi',
     'pyusb',
+    'more-itertools',
 ]
 
 extras_require = {
