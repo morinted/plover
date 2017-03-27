@@ -302,7 +302,7 @@ if sys.platform.startswith('win32'):
             request_packet = request.pack()
             WriteFile(
                 self._usb_device,
-                byref(request_packet),
+                request_packet,
                 StenoPacket.HEADER_SIZE + request.data_length,
                 byref(bytes_written),
                 None

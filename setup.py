@@ -495,7 +495,6 @@ install_requires = [
     'pyserial>=2.7',
     'appdirs>=1.3.0',
     'hidapi',
-    'pyusb',
     'more-itertools',
 ]
 
@@ -509,12 +508,14 @@ extras_require = {
         # packages are missing the required Python distribution info.
         # 'PyQt5',
         'python-xlib>=0.16',
+        'pyusb',
     ],
     ':"darwin" in sys_platform': [
         'PyQt5',
         'pyobjc-core==3.1.1+plover2',
         'pyobjc-framework-Cocoa==3.1.1+plover2',
         'pyobjc-framework-Quartz==3.1.1',
+        'pyusb',
         'appnope>=0.1.0',
     ],
 }
