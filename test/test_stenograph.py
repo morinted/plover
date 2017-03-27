@@ -62,7 +62,6 @@ class StenographTestCase(unittest.TestCase):
              255, 255, 255, 255, 0, 0, 0, 0,  # All keys
              0b11000000, 0b11000000, 0b11000000, 0b11000000, 0, 0, 0, 0,  # No keys
              0b11000001, 0b11000001, 0b11000001, 0b11000001, 0, 0, 0, 0,  # P*BZ
-             None, None, 0, None, 0, 0, 0, 0,  # Invalid data (ignore)
              0b11100000, 0b11100000, 0b11100000, 0b11100000, 0, 0, 0, 0,  # ^WEL
          ]
         packet.data_length = len(packet.data)
@@ -73,6 +72,5 @@ class StenographTestCase(unittest.TestCase):
              '-L', '-G', '-T', '-S', '-D', '-Z'],  # All keys
             # No keys
             ['P-', '*', '-B', '-Z' ],  # P*BZ
-            # Invalid data (ignore)
             ['^', 'W-', '-E', '-L' ],  # ^WEL
         ]

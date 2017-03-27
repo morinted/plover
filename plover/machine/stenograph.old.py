@@ -413,7 +413,7 @@ class Stenograph(ThreadedStenotypeBase):
                 response = self._machine.read(self._file_offset)
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
-                log.debug('Stenograph exception: %s', str(e))
+                log.debug('Stenograph exception: %s', e)
                 self._reset_state()
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
