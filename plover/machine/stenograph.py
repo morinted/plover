@@ -89,8 +89,10 @@ class StenoPacket(object):
     HEADER_SIZE = calcsize(_STRUCT_FORMAT)
     _STRUCT = Struct(_STRUCT_FORMAT)
 
-    ACTION_OPEN = 0x12
-    ACTION_READ = 0x13
+    ID_ERROR = 0x6
+    ID_OPEN = 0x12
+    ID_READ = 0x13
+
     
     sequence_number = 0
 
@@ -164,7 +166,7 @@ class StenoPacket(object):
     def make_open_request(file_name=b'REALTIME.000', disk_id=b'A'):
         """Request to open a file on the writer, defaults to the realtime file."""
         return StenoPacket(
-            packet_id=StenoPacket.ACTION_OPEN,
+            packet_id=StenoPacket.ID_OPEN,
             p1=ord(disk_id),
             data=file_name,
         )
@@ -173,7 +175,7 @@ class StenoPacket(object):
     def make_read_request(file_offset=1, byte_count=MAX_READ):
         """Request to read from the writer, defaults to settings required when reading from realtime file."""
         return StenoPacket(
-            packet_id=StenoPacket.ACTION_READ,
+            packet_id=StenoPacket.ID_READ,
             p1=file_offset,
             p2=byte_count,
         )
@@ -184,7 +186,7 @@ class StenoPacket(object):
         # Expecting 8-byte chords (4 bytes of steno, 4 of timestamp.)
         assert self.data_length % 8 == 0
         # Steno should only be present on ACTION_READ packets
-        assert self.packet_id == self.ACTION_READ
+        assert self.packet_id == self.ID_READ
 
         strokes = []
         for stroke_data in grouper(8, self.data, 0):
@@ -492,10 +494,28 @@ class Stenograph(ThreadedStenotypeBase):
             else:
                 if response is None:
                     continue
-                chords = response.strokes()
-                for keys in chords:
-                    if keys:
-                        self._on_stroke(keys)
+                # Check for error packet
+                if response.packet_id == StenoPacket.ID_ERROR:
+                    error_number = response.p1
+                    # Unable to perform request
+                    if error_number == 3:
+                        pass
+                    # File not available
+                    if error_number == 7:
+                        pass
+                    # No realtime file
+                    if error_number == 8:
+                        # Realtime file should appear once user starts writing.
+                        # TODO: wrap this in try catch or move it somewhere better.
+                        self._machine.send_receive(StenoPacket.make_open_request())
+                    # Finished reading closed file
+                    if error_number == 9:
+                        pass
+                elif response.packet_id == StenoPacket.ID_READ and response.data_length:
+                    chords = response.strokes()
+                    for keys in chords:
+                        if keys:
+                            self._on_stroke(keys)
         self._machine.disconnect()
 
     def stop_capture(self):

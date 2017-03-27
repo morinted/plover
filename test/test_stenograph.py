@@ -31,7 +31,7 @@ class StenographTestCase(unittest.TestCase):
         raw_packet = bytearray(
             [0x53, 0x47,  # SG
              0, 0, 0, 0,  # Sequence number
-             StenoPacket.ACTION_READ, 0,  # Action (static)
+             StenoPacket.ID_READ, 0,  # Action (static)
              len(raw_stroke_data), 0, 0, 0,  # Data length
              1, 0, 0, 0,  # File offset
              0, 0x02, 0, 0,  # Requested byte count (static 512)
@@ -44,7 +44,7 @@ class StenographTestCase(unittest.TestCase):
         assert stroke.data_length == 8
         assert stroke.p2 == 512
         assert stroke.data == raw_stroke_data
-        assert stroke.packet_id == StenoPacket.ACTION_READ
+        assert stroke.packet_id == StenoPacket.ID_READ
         assert stroke.strokes() == [['P-']]
 
         # Test conversion back into marshaled
