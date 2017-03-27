@@ -1,8 +1,9 @@
 from itertools import compress
 from struct import *
 from time import sleep
+
+import sys
 from more_itertools import grouper
-from usb import *
 from plover.machine.base import ThreadedStenotypeBase
 from plover import log
 
@@ -67,11 +68,12 @@ STENO_KEY_CHART = (
 )
 
 VENDOR_ID = 0x112b
+MAX_READ = 0x200  # Arbitrary read limit
 
 
-class USBPacket(object):
+class StenoPacket(object):
     """
-    Stenograph Steno Packet helper
+    Stenograph StenoPacket helper
 
     Can be used to create packets to send to the writer, as well as
     decode a packet from the writer.
@@ -106,8 +108,8 @@ class USBPacket(object):
         data -- data to be appended to the end of the packet, used for steno strokes from the writer.
         """
         if sequence_number is None:
-            sequence_number = USBPacket.sequence_number
-            USBPacket._increment_sequence_number()
+            sequence_number = StenoPacket.sequence_number
+            StenoPacket._increment_sequence_number()
         if data_length is None:
             data_length = len(data)
         self.sequence_number = sequence_number
@@ -142,42 +144,42 @@ class USBPacket(object):
 
     @staticmethod
     def _increment_sequence_number():
-        USBPacket.sequence_number = (USBPacket.sequence_number + 1) % 0xFFFFFFFF
+        StenoPacket.sequence_number = (StenoPacket.sequence_number + 1) % 0xFFFFFFFF
 
     @staticmethod
     def unpack(usb_packet):
         """Create a USBPacket from raw data"""
-        packet = USBPacket(
+        packet = StenoPacket(
             # Drop sync when unpacking.
-            *USBPacket._STRUCT.unpack(usb_packet[:USBPacket.HEADER_SIZE])[1:]
+            *StenoPacket._STRUCT.unpack(usb_packet[:StenoPacket.HEADER_SIZE])[1:]
         )
         if packet.data_length:
             packet.data, = unpack(
                 '%ss' % packet.data_length,
-                usb_packet[USBPacket.HEADER_SIZE:USBPacket.HEADER_SIZE + packet.data_length]
+                usb_packet[StenoPacket.HEADER_SIZE:StenoPacket.HEADER_SIZE + packet.data_length]
             )
         return packet
 
     @staticmethod
     def make_open_request(file_name=b'REALTIME.000', disk_id=b'A'):
         """Request to open a file on the writer, defaults to the realtime file."""
-        return USBPacket(
-            packet_id=USBPacket.ACTION_OPEN,
+        return StenoPacket(
+            packet_id=StenoPacket.ACTION_OPEN,
             p1=ord(disk_id),
             data=file_name,
         )
 
     @staticmethod
-    def make_read_request(file_offset=1, byte_count=512):
+    def make_read_request(file_offset=1, byte_count=MAX_READ):
         """Request to read from the writer, defaults to settings required when reading from realtime file."""
-        return USBPacket(
-            packet_id=USBPacket.ACTION_READ,
+        return StenoPacket(
+            packet_id=StenoPacket.ACTION_READ,
             p1=file_offset,
             p2=byte_count,
         )
 
     def strokes(self):
-        """Get the chords represented in this packet's data"""
+        """Get list of strokes represented in this packet's data"""
 
         # Expecting 8-byte chords (4 bytes of steno, 4 of timestamp.)
         assert self.data_length % 8 == 0
@@ -199,69 +201,226 @@ class USBPacket(object):
         return strokes
 
 
-class StenographMachine(object):
+if sys.platform.startswith('win32'):
+    from ctypes import *
+    from ctypes.wintypes import DWORD, HANDLE, BYTE
+    import uuid
 
-    def __init__(self):
-        super(StenographMachine, self).__init__()
-        self._usb_device = None
-        self._endpoint_in = None
-        self._endpoint_out = None
-        self._connected = False
+    class DeviceInterfaceData(Structure):
+        _fields_ = [
+            ('cbSize', DWORD),
+            ('InterfaceClassGuid', BYTE * 16),
+            ('Flags', DWORD),
+            ('Reserved', POINTER(c_ulonglong))
+        ]
 
-    def connect(self):
-        # Disconnect device if it's already connected.
-        if self._connected:
-            self.disconnect()
+    # Class GUID / UUID for Stenograph USB Writer
+    USB_WRITER_GUID = uuid.UUID('{c5682e20-8059-604a-b761-77c4de9d5dbf}')
 
-        # Find the device by the vendor ID.
-        self._usb_device = core.find(idVendor=VENDOR_ID)
-        if not self._usb_device:  # Device not found
+    # For Windows we directly call Windows API functions
+    SetupDiGetClassDevs = windll.setupapi.SetupDiGetClassDevsA
+    SetupDiEnumDeviceInterfaces = windll.setupapi.SetupDiEnumDeviceInterfaces
+    SetupDiGetInterfaceDeviceDetail = (
+        windll.setupapi.SetupDiGetDeviceInterfaceDetailA)
+    CreateFile = windll.kernel32.CreateFileA
+    ReadFile = windll.kernel32.ReadFile
+    WriteFile = windll.kernel32.WriteFile
+    CloseHandle = windll.kernel32.CloseHandle
+    GetLastError = windll.kernel32.GetLastError
+
+    # USB Writer 'defines'
+    INVALID_HANDLE_VALUE = -1
+    ERROR_INSUFFICIENT_BUFFER = 122
+    USB_NO_RESPONSE = -9
+    RT_FILE_ENDED_ON_WRITER = -8
+
+    class StenographMachine(object):
+        def __init__(self):
+            self._connected = False
+            self._usb_device = HANDLE(0)
+            self._read_buffer = create_string_buffer(MAX_READ + StenoPacket.HEADER_SIZE)
+
+        @staticmethod
+        def _open_device_instance(device_info, guid):
+            dev_interface_data = DeviceInterfaceData()
+            dev_interface_data.cbSize=sizeof(dev_interface_data)
+
+            status = SetupDiEnumDeviceInterfaces(
+                device_info, None, guid.bytes, 0, byref(dev_interface_data))
+            if status == 0:
+                return INVALID_HANDLE_VALUE
+
+            request_length = DWORD(0)
+            # Call with None to see how big a buffer we need for detail data.
+            SetupDiGetInterfaceDeviceDetail(
+                device_info,
+                byref(dev_interface_data),
+                None,
+                0,
+                pointer(request_length),
+                None
+            )
+            error = GetLastError()
+            if error != ERROR_INSUFFICIENT_BUFFER:
+                return INVALID_HANDLE_VALUE
+
+            characters = request_length.value
+
+            class DeviceDetailData(Structure):
+                _fields_ = [('cbSize', DWORD),
+                            ('DevicePath', c_char * characters)]
+            dev_detail_data = DeviceDetailData()
+            dev_detail_data.cbSize = 5  # DWORD + 4 byte pointer
+
+            # Now put the actual detail data into the buffer
+            status = SetupDiGetInterfaceDeviceDetail(
+                device_info, byref(dev_interface_data), byref(dev_detail_data),
+                characters, pointer(request_length), None
+            )
+            if not status:
+                return INVALID_HANDLE_VALUE
+            return CreateFile(
+                dev_detail_data.DevicePath,
+                0xC0000000, 0x3, 0, 0x3, 0x80, 0
+            )
+
+        @staticmethod
+        def _open_device_by_class_interface_and_instance(classguid):
+            device_info = SetupDiGetClassDevs(classguid.bytes, 0, 0, 0x12)
+            if device_info == INVALID_HANDLE_VALUE:
+                return INVALID_HANDLE_VALUE
+
+            usb_device = StenographMachine._open_device_instance(
+                device_info, classguid)
+            return usb_device
+
+        def _usb_write_packet(self, request):
+            if self._usb_device == INVALID_HANDLE_VALUE:
+                return 0
+
+            bytes_written = DWORD(0)
+            request_packet = request.pack()
+            WriteFile(
+                self._usb_device,
+                byref(request_packet),
+                StenoPacket.HEADER_SIZE + request.data_length,
+                byref(bytes_written),
+                None
+            )
+            if bytes_written.value < StenoPacket.HEADER_SIZE:
+                raise IOError('Machine read or write failed')
+
+        def _usb_read_packet(self):
+            assert self._usb_device != INVALID_HANDLE_VALUE, 'device not open'
+
+            bytes_read = DWORD(0)
+            ReadFile(
+              self._usb_device,
+              byref(self._read_buffer),
+              MAX_READ + StenoPacket.HEADER_SIZE,
+              byref(bytes_read),
+              None
+            )
+            # Return None if not enough data was read.
+            if bytes_read.value < StenoPacket.HEADER_SIZE:
+                raise IOError('Machine read or write failed')
+
+            writer_packet = StenoPacket.unpack(self._read_buffer)
+            return writer_packet
+
+        def disconnect(self):
+            CloseHandle(self._usb_device)
+            self._usb_device = INVALID_HANDLE_VALUE
+
+        def connect(self):
+            # If already connected, disconnect first.
+            if self._usb_device != INVALID_HANDLE_VALUE:
+                self.disconnect()
+            self._usb_device = (
+                self._open_device_by_class_interface_and_instance(
+                    USB_WRITER_GUID))
+            return self._usb_device != INVALID_HANDLE_VALUE
+
+        def send_receive(self, request):
+            self._usb_write_packet(request)
+            writer_packet = self._usb_read_packet()
+            if writer_packet.sequence_number == request.sequence_number:
+                return writer_packet
+            return None
+else:
+    from usb import core, util
+
+    class StenographMachine(object):
+
+        def __init__(self):
+            super(StenographMachine, self).__init__()
+            self._usb_device = None
+            self._endpoint_in = None
+            self._endpoint_out = None
+            self._connected = False
+
+        def connect(self):
+            """Attempt to and return connection"""
+            # Disconnect device if it's already connected.
+            if self._connected:
+                self.disconnect()
+
+            # Find the device by the vendor ID.
+            usb_device = core.find(idVendor=VENDOR_ID)
+            if not usb_device:  # Device not found
+                return self._connected
+
+            # Copy the default configuration.
+            usb_device.set_configuration()
+            config = usb_device.get_active_configuration()
+            interface = config[(0, 0)]
+
+            # Get the write endpoint.
+            endpoint_out = util.find_descriptor(
+                interface,
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                    util.ENDPOINT_OUT
+            )
+            assert endpoint_out is not None, 'cannot find write endpoint'
+
+            # Get the read endpoint.
+            endpoint_in = util.find_descriptor(
+                interface,
+                custom_match=lambda e:
+                    util.endpoint_direction(e.bEndpointAddress) ==
+                    util.ENDPOINT_IN
+            )
+            assert endpoint_in is not None, 'cannot find read endpoint'
+
+            self._usb_device = usb_device
+            self._endpoint_in = endpoint_in
+            self._endpoint_out = endpoint_out
+            self._connected = True
             return self._connected
 
-        # Copy the default configuration.
-        self._usb_device.set_configuration()
-        config = self._usb_device.get_active_configuration()
-        interface = config[(0, 0)]
+        def disconnect(self):
+            self._connected = False
+            util.dispose_resources(self._usb_device)
+            self._usb_device = None
+            self._endpoint_in = None
+            self._endpoint_out = None
 
-        # Get the write endpoint.
-        self._endpoint_out = util.find_descriptor(
-            interface,
-            custom_match=lambda e:
-            util.endpoint_direction(e.bEndpointAddress) ==
-            util.ENDPOINT_OUT)
-        assert self._endpoint_out is not None, 'cannot find write endpoint'
-
-        # Get the read endpoint.
-        self._endpoint_in = util.find_descriptor(
-            interface,
-            custom_match=lambda e:
-            util.endpoint_direction(e.bEndpointAddress) ==
-            util.ENDPOINT_IN)
-        assert self._endpoint_in is not None, 'cannot find read endpoint'
-
-        self._connected = True
-        return self._connected
-
-    def disconnect(self):
-        self._connected = False
-        util.dispose_resources(self._usb_device)
-        self._usb_device = None
-        self._endpoint_in = None
-        self._endpoint_out = None
-
-    def send_receive(self, packet):
-        assert self._connected, 'cannot read from machine if not connected'
-        try:
-            self._endpoint_out.write(packet)
-            response = self._endpoint_in.read(1024, 3000)
-        except core.USBError:
-            raise IOError('Machine read or write failed')
-        else:
-            if response and len(response) >= USBPacket.HEADER_SIZE:
-                writer_packet = USBPacket.unpack(response)
-                if writer_packet.sequence_number == packet.sequence_number:
-                    return writer_packet
-            return None
+        def send_receive(self, request):
+            assert self._connected, 'cannot read from machine if not connected'
+            try:
+                self._endpoint_out.write(request.pack())
+                response = self._endpoint_in.read(
+                    MAX_READ + StenoPacket.HEADER_SIZE, 3000)
+            except core.USBError:
+                raise IOError('Machine read or write failed')
+            else:
+                if response and len(response) >= StenoPacket.HEADER_SIZE:
+                    writer_packet = StenoPacket.unpack(response)
+                    # Ignore data if sequence numbers don't match.
+                    if writer_packet.sequence_number == request.sequence_number:
+                        return writer_packet
+                return None
 
 
 class Stenograph(ThreadedStenotypeBase):
@@ -273,6 +432,7 @@ class Stenograph(ThreadedStenotypeBase):
               A- O-   -E -U
         ^
     '''
+    KEYMAP_MACHINE_TYPE = 'Stentura'
 
     def __init__(self, params):
         super(Stenograph, self).__init__()
@@ -317,20 +477,18 @@ class Stenograph(ThreadedStenotypeBase):
 
     def run(self):
         # Open realtime file
-        response = self._machine.send_receive(USBPacket.make_open_request())
-        assert response.data_length == 0 # No error on open.
+        response = self._machine.send_receive(StenoPacket.make_open_request())
+        print('OPEN response from writer:', response)
         while not self.finished.isSet():
             try:
-                response = self._machine.send_receive(USBPacket.make_read_request())
+                response = self._machine.send_receive(StenoPacket.make_read_request())
+                print('got READ response:', response)
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
                 log.debug('Stenograph exception: %s', str(e))
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
                     self._ready()
-            except EOFError:
-                # File ended -- will resume normal operation after new file
-                pass
             else:
                 if response is None:
                     continue

@@ -399,6 +399,7 @@ entrypoints = {
         'Keyboard  = plover.machine.keyboard:Keyboard',
         'Passport  = plover.machine.passport:Passport',
         'ProCAT    = plover.machine.procat:ProCAT',
+        'Stenograph= plover.machine.stenograph:Stenograph',
         'Stentura  = plover.machine.stentura:Stentura',
         'TX Bolt   = plover.machine.txbolt:TxBolt',
         'Treal     = plover.machine.treal:Treal',
