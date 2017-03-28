@@ -98,7 +98,8 @@ class StenoPacket(object):
 
     sequence_number = 0
 
-    def __init__(self, sequence_number=None, packet_id=0, data_length=None, p1=0, p2=0, p3=0, p4=0, p5=0, data=b''):
+    def __init__(self, sequence_number=None, packet_id=0, data_length=None,
+                 p1=0, p2=0, p3=0, p4=0, p5=0, data=b''):
         """Create a USB Packet
 
         sequence_number -- ideally unique, if not passed one will be assigned sequentially.
@@ -540,40 +541,47 @@ class Stenograph(ThreadedStenotypeBase):
             return response
 
     def run(self):
-        realtime_file_open = False
-        offset = 0
-        realtime = False # Not realtime until we get a 0-length response
+
+        class ReadState(object):
+            def __init__(self):
+                self.realtime = False  # Not realtime until we get a 0-length response
+                self.realtime_file_open = False  # We are reading from a file
+                self.offset = 1  # File offset to read from
+
+            def reset(self):
+                self.__init__()
+
+        state = ReadState()
+
         while not self.finished.isSet():
             try:
-                if not realtime_file_open:
+                if not state.realtime_file_open:
                     # Open realtime file
                     self._send_receive(StenoPacket.make_open_request())
-                    realtime_file_open = True
-                response = self._send_receive(StenoPacket.make_read_request(file_offset=offset))
+                    state.realtime_file_open = True
+                response = self._send_receive(
+                    StenoPacket.make_read_request(file_offset=state.offset)
+                )
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
                 log.debug('Stenograph exception: %s', e)
-                offset = 0
-                realtime_file_open = False
-                realtime = False
+                # User could start a new file while disconnected.
+                state.reset()
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
                     self._ready()
             except NoRealtimeFileException:
                 # User hasn't started writing, just keep opening the realtime file
-                realtime_file_open = False
-                realtime = False
+                state.reset()
             except FinishedReadingClosedFileException:
-                # File closed!
-                realtime_file_open = False
-                realtime = False
-                offset = 0
+                # File closed! Open the realtime file.
+                state.reset()
             else:
                 if response.data_length:
-                    offset += response.data_length
-                else:
-                    realtime = True
-                if response.data_length and realtime:
+                    state.offset += response.data_length
+                elif not state.realtime:
+                    state.realtime = True
+                if response.data_length and state.realtime:
                     for stroke in response.strokes():
                         self._on_stroke(stroke)
 
