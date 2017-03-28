@@ -1,0 +1,2 @@
+--extra-index-url https://testpypi.python.org/pypi
+plover_plugins_manager

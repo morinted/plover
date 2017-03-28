@@ -174,7 +174,8 @@ class BinaryDistWin(Command):
         # install` to prevent setuptools from installing extra development
         # dependencies...
         run(dist_py, '-m', 'utils.install_wheels',
-            '--ignore-installed', plover_wheel)
+            '--ignore-installed', plover_wheel,
+            '-r', 'blessed_plugins_requirements.txt')
         # List installed packages.
         if self.verbose:
             run(dist_py, '-m', 'pip', 'list', '--format=columns')

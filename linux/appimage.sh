@@ -126,7 +126,7 @@ wheels_install --no-install pip wheel
 
 # Install Plover and dependencies.
 # Note: temporarily install Cython so building cython-hidapi's wheel is faster.
-rwt Cython -- wheels_install --ignore-installed "$wheel" PyQt5 dbus-python pip wheel
+rwt Cython -- wheels_install --ignore-installed "$wheel" PyQt5 dbus-python -r "$topdir/blessed_plugins_requirements.txt"
 
 # List installed Python packages.
 run "$python" -m pip list --format=columns
