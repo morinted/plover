@@ -42,7 +42,7 @@ Description   Packet ID   Data Length       Param 1       Param 2     Param 3   
 Read Bytes    0x0013      Number of Bytes   File Offset   00000000    00000000    00000000    00000000
 
 -Parameter 1 contains the file offset from which the Mira is returning bytes
--For real-time the data is four bytes of steno and 4 bytes of timestamp - 8 bytes per stroke - repeating for the number of strokes returned.  
+-For real-time the data is four bytes of steno and 4 bytes of timestamp - 8 bytes per stroke - repeating for the number of strokes returned.
 The format of the eight bytes will be:
 -Byte 0: 11^#STKP
 -Byte 1: 11WHRAO*
@@ -50,7 +50,7 @@ The format of the eight bytes will be:
 -Byte 3: 11LGTSDZ
 -Bytes 4-7: 'timestamp'
 -The steno is in the (very) old SmartWriter format where the top two bits of each of the four bytes are set to 1 and the bottom 6 bits as set according to the keys pressed.
--If the Data Length is zero that indicates there are no more bytes available (real-time).  
+-If the Data Length is zero that indicates there are no more bytes available (real-time).
 -If the file has been closed (on the writer) an Error packet (error: FileClosed) will be sent in response to Read Bytes.
 
 Description   Packet ID   Data Length       Param 1       Param 2     Param 3     Param 4     Param 5
@@ -95,7 +95,7 @@ class StenoPacket(object):
     ID_OPEN = 0x12
     ID_READ = 0x13
 
-    
+
     sequence_number = 0
 
     def __init__(self, sequence_number=None, packet_id=0, data_length=None, p1=0, p2=0, p3=0, p4=0, p5=0, data=b''):
@@ -128,7 +128,7 @@ class StenoPacket(object):
 
     def __str__(self):
         return (
-            'USBPacket(sequence_number=%s, '
+            'StenoPacket(sequence_number=%s, '
             'packet_id=%s, data_length=%s, '
             'p1=%s, p2=%s, p3=%s, p4=%s, p5=%s, data=%s)'
             % (hex(self.sequence_number), hex(self.packet_id),
@@ -541,26 +541,42 @@ class Stenograph(ThreadedStenotypeBase):
 
     def run(self):
         realtime_file_open = False
+        offset = 0
+        realtime = False # Not realtime until we get a 0-length response
         while not self.finished.isSet():
             try:
                 if not realtime_file_open:
                     # Open realtime file
                     self._send_receive(StenoPacket.make_open_request())
                     realtime_file_open = True
-                response = self._send_receive(StenoPacket.make_read_request())
+                response = self._send_receive(StenoPacket.make_read_request(file_offset=offset))
             except IOError as e:
                 log.warning(u'Stenograph machine disconnected, reconnecting…')
                 log.debug('Stenograph exception: %s', e)
+                offset = 0
+                realtime_file_open = False
+                realtime = False
                 if self._reconnect():
                     log.warning('Stenograph reconnected.')
                     self._ready()
             except NoRealtimeFileException:
                 # User hasn't started writing, just keep opening the realtime file
                 realtime_file_open = False
+                realtime = False
+            except FinishedReadingClosedFileException:
+                # File closed!
+                realtime_file_open = False
+                realtime = False
+                offset = 0
             else:
                 if response.data_length:
+                    offset += response.data_length
+                else:
+                    realtime = True
+                if response.data_length and realtime:
                     for stroke in response.strokes():
                         self._on_stroke(stroke)
+
         self._machine.disconnect()
 
     def stop_capture(self):
@@ -568,5 +584,3 @@ class Stenograph(ThreadedStenotypeBase):
         super(Stenograph, self).stop_capture()
         self._machine = None
         self._stopped()
-
-
