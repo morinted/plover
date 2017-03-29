@@ -237,6 +237,7 @@ if sys.platform.startswith('win32'):
 
     # Class GUID for Stenograph USB Writer
     USB_WRITER_GUID = uuid.UUID('{c5682e20-8059-604a-b761-77c4de9d5dbf}')
+    USB_WRITER_GUID_LEGACY = uuid.UUID('{202e68c5-6980-4a60-b761-77c4de9d5dbf}')
 
     INVALID_HANDLE_VALUE = -1
     ERROR_INSUFFICIENT_BUFFER = 122
@@ -351,6 +352,10 @@ if sys.platform.startswith('win32'):
             self._usb_device = (
                 self._open_device_by_class_interface_and_instance(
                     USB_WRITER_GUID))
+            if self._usb_device == INVALID_HANDLE_VALUE:
+                self._usb_device = (
+                    self._open_device_by_class_interface_and_instance(
+                        USB_WRITER_GUID_LEGACY))
             return self._usb_device != INVALID_HANDLE_VALUE
 
         def send_receive(self, request):
