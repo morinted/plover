@@ -225,46 +225,45 @@ if sys.platform.startswith('win32'):
     from ctypes.wintypes import DWORD, HANDLE, BYTE
     import uuid
 
+    # Class GUID for Stenograph USB Writer
+    USB_WRITER_GUID = uuid.UUID('{c5682e20-8059-604a-b761-77c4de9d5dbf}')
+
+    class DeviceInterfaceData(Structure):
+        _fields_ = [
+            ('cbSize', DWORD),
+            ('InterfaceClassGuid', BYTE * 16),
+            ('Flags', DWORD),
+            ('Reserved', POINTER(c_ulonglong))
+        ]
+
     # For Windows we directly call Windows API functions
     SetupDiGetClassDevs = windll.setupapi.SetupDiGetClassDevsA
     SetupDiEnumDeviceInterfaces = windll.setupapi.SetupDiEnumDeviceInterfaces
-    SetupDiGetInterfaceDeviceDetail = windll.setupapi.SetupDiGetDeviceInterfaceDetailA
+    SetupDiGetInterfaceDeviceDetail = (
+        windll.setupapi.SetupDiGetDeviceInterfaceDetailA)
     CreateFile = windll.kernel32.CreateFileA
     ReadFile = windll.kernel32.ReadFile
     WriteFile = windll.kernel32.WriteFile
     CloseHandle = windll.kernel32.CloseHandle
     GetLastError = windll.kernel32.GetLastError
 
-    # Class GUID for Stenograph USB Writer
-    USB_WRITER_GUID = uuid.UUID('{c5682e20-8059-604a-b761-77c4de9d5dbf}')
-    USB_WRITER_GUID_LEGACY = uuid.UUID('{202e68c5-6980-4a60-b761-77c4de9d5dbf}')
-
     INVALID_HANDLE_VALUE = -1
     ERROR_INSUFFICIENT_BUFFER = 122
 
-    class StenographMachine(AbstractStenographMachine):
+    class StenographMachine(object):
         def __init__(self):
             self._usb_device = HANDLE(0)
             self._read_buffer = create_string_buffer(MAX_READ + StenoPacket.HEADER_SIZE)
 
         @staticmethod
         def _open_device_instance(device_info, guid):
-            class DeviceInterfaceData(Structure):
-                _fields_ = [
-                    ('cbSize', DWORD),
-                    ('InterfaceClassGuid', BYTE * 16),
-                    ('Flags', DWORD),
-                    ('Reserved', POINTER(c_ulonglong))
-                ]
-
-                def __init__(self):
-                    self.cpSize = sizeof(DeviceInterfaceData)
-
             dev_interface_data = DeviceInterfaceData()
+            dev_interface_data.cbSize = sizeof(dev_interface_data)
 
             status = SetupDiEnumDeviceInterfaces(
                 device_info, None, guid.bytes, 0, byref(dev_interface_data))
             if status == 0:
+                log.debug('status is zero')
                 return INVALID_HANDLE_VALUE
 
             request_length = DWORD(0)
@@ -277,7 +276,9 @@ if sys.platform.startswith('win32'):
                 pointer(request_length),
                 None
             )
-            if GetLastError() != ERROR_INSUFFICIENT_BUFFER:
+            err = GetLastError()
+            if err != ERROR_INSUFFICIENT_BUFFER:
+                log.debug('last error not insufficient buffer')
                 return INVALID_HANDLE_VALUE
 
             characters = request_length.value
@@ -286,10 +287,8 @@ if sys.platform.startswith('win32'):
                 _fields_ = [('cbSize', DWORD),
                             ('DevicePath', c_char * characters)]
 
-                def __init__(self):
-                    self.cbSize = sizeof(DeviceDetailData)
-
             dev_detail_data = DeviceDetailData()
+            dev_detail_data.cbSize = 5
 
             # Now put the actual detail data into the buffer
             status = SetupDiGetInterfaceDeviceDetail(
@@ -297,7 +296,9 @@ if sys.platform.startswith('win32'):
                 characters, pointer(request_length), None
             )
             if not status:
+                log.debug('not status')
                 return INVALID_HANDLE_VALUE
+            log.debug('okay, creating file')
             return CreateFile(
                 dev_detail_data.DevicePath,
                 0xC0000000, 0x3, 0, 0x3, 0x80, 0
@@ -307,6 +308,7 @@ if sys.platform.startswith('win32'):
         def _open_device_by_class_interface_and_instance(class_guid):
             device_info = SetupDiGetClassDevs(class_guid.bytes, 0, 0, 0x12)
             if device_info == INVALID_HANDLE_VALUE:
+                log.debug('dev info is invalid handle')
                 return INVALID_HANDLE_VALUE
 
             usb_device = StenographMachine._open_device_instance(
@@ -352,10 +354,6 @@ if sys.platform.startswith('win32'):
             self._usb_device = (
                 self._open_device_by_class_interface_and_instance(
                     USB_WRITER_GUID))
-            if self._usb_device == INVALID_HANDLE_VALUE:
-                self._usb_device = (
-                    self._open_device_by_class_interface_and_instance(
-                        USB_WRITER_GUID_LEGACY))
             return self._usb_device != INVALID_HANDLE_VALUE
 
         def send_receive(self, request):
