@@ -41,7 +41,7 @@ def init_config_dir():
             f.close()
 
 
-def main():
+def main(args=None):
     """Launch plover."""
     description = "Run the plover stenotype engine. This is a graphical application."
     parser = argparse.ArgumentParser(description=description)
@@ -54,7 +54,9 @@ def main():
     parser.add_argument('-l', '--log-level', choices=['debug', 'info', 'warning', 'error'],
                         default=None, help='set log level')
     parser.add_argument('-g', '--gui', default='qt', help='set gui')
-    args = parser.parse_args(args=sys.argv[1:])
+    if args is None:
+        args = sys.argv[1:]
+    args = parser.parse_args(args)
     if args.log_level is not None:
         log.set_level(args.log_level.upper())
     log.setup_platform_handler()
