@@ -10,7 +10,7 @@ from plover.oslayer.config import CONFIG_DIR
 from plover import log
 
 
-PLUGINS_DIR = os.path.join(CONFIG_DIR, 'plugins')
+PLUGINS_BASE = os.path.join(CONFIG_DIR, 'plugins')
 
 if sys.platform.startswith('darwin'):
     PLUGINS_PLATFORM = 'mac'
@@ -88,20 +88,19 @@ class Registry(object):
     def list_distributions(self):
         return [dist for dist_id, dist in sorted(self._distributions.items())]
 
-    def get_plugins_syspath(self, plugins_dir=PLUGINS_DIR):
-        directories = [plugins_dir]
-        # Add platform / python version specific directory too.
+    def get_plugins_dir(self):
+        # Use a platform / python version specific sub-directory
+        # so the base directory can be used on multiple plaforms.
         i = Distribution().get_command_obj('install', create=True)
-        i.prefix = os.path.join(PLUGINS_DIR, PLUGINS_PLATFORM)
+        i.prefix = os.path.join(PLUGINS_BASE, PLUGINS_PLATFORM)
         i.finalize_options()
-        directories.append(i.install_lib)
-        return directories
+        return i.install_lib
 
-    def load_plugins(self, plugins_dir=PLUGINS_DIR):
+    def load_plugins(self):
+        plugins_dir = self.get_plugins_dir()
         log.info('loading plugins from %s', plugins_dir)
-        directories = self.get_plugins_syspath(plugins_dir)
         working_set = pkg_resources.working_set
-        environment = pkg_resources.Environment(directories)
+        environment = pkg_resources.Environment([plugins_dir])
         distributions, errors = working_set.find_plugins(environment)
         if errors:
             log.error("error(s) while loading plugins: %s", errors)
