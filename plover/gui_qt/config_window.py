@@ -351,6 +351,8 @@ class ConfigWindow(QDialog, Ui_ConfigWindow, WindowState):
         machine_options = {
             'Keyboard': KeyboardOption,
             'Treal': NopeOption,
+            'Stenograph': NopeOption,
+
         }
         machines = {
             plugin.name: _(plugin.name)
