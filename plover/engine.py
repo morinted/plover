@@ -300,20 +300,13 @@ class StenoEngine(object):
         self._trigger_hook('machine_state_changed', machine_type, machine_state)
 
     def _consume_engine_command(self, command):
-        # The first commands can be used whether plover has output enabled or not.
         if command == 'RESUME':
             self._set_output(True)
-            return
         elif command == 'TOGGLE':
             self._toggle_output()
-            return
         elif command == 'QUIT':
             self._trigger_hook('quit')
-            return
-        if not self._is_running:
-            return
-        # These commands can only be run when plover has output enabled.
-        if command == 'SUSPEND':
+        elif command == 'SUSPEND':
             self._set_output(False)
         elif command == 'CONFIGURE':
             self._trigger_hook('configure')
@@ -358,6 +351,8 @@ class StenoEngine(object):
         self._trigger_hook('send_key_combination', c)
 
     def send_engine_command(self, command):
+        if not self._is_running:
+            return
         self._consume_engine_command(command)
 
     def toggle_output(self):
