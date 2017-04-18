@@ -57,7 +57,6 @@ class FakeMachine(StenotypeBase):
     def __init__(self, options):
         super(FakeMachine, self).__init__()
         self.options = options
-        self.is_suppressed = False
 
     @classmethod
     def get_keys(cls):
@@ -73,8 +72,6 @@ class FakeMachine(StenotypeBase):
         FakeMachine.instance = None
         self._stopped()
 
-    def set_suppression(self, enabled):
-        self.is_suppressed = enabled
 
 class FakeKeyboardEmulation(object):
 
@@ -140,7 +137,6 @@ class EngineTestCase(unittest.TestCase):
                 ('output_changed', (True,), {}),
             ])
             self.assertIsNotNone(FakeMachine.instance)
-            self.assertTrue(FakeMachine.instance.is_suppressed)
             # Machine reconnection.
             self.events = []
             self.engine.reset_machine()
@@ -150,7 +146,6 @@ class EngineTestCase(unittest.TestCase):
                 ('machine_state_changed', ('Fake', 'connected'), {}),
             ])
             self.assertIsNotNone(FakeMachine.instance)
-            self.assertTrue(FakeMachine.instance.is_suppressed)
             # Output disabled
             self.events = []
             self.engine.output = False

@@ -84,26 +84,6 @@ class StenotypeBase(object):
         for callback in self.stroke_subscribers:
             callback(steno_keys)
 
-    def set_suppression(self, enabled):
-        '''Enable keyboard suppression.
-
-        This is only of use for the keyboard machine,
-        to suppress the keyboard when then engine is running.
-        '''
-        pass
-
-    def suppress_last_stroke(self, send_backspaces):
-        '''Suppress the last stroke key events after the fact.
-
-        This is only of use for the keyboard machine,
-        and the engine is resumed with a command stroke.
-
-        Argument:
-
-        send_backspaces -- The function to use to send backspaces.
-        '''
-        pass
-
     def _set_state(self, state):
         self.state = state
         for callback in self.state_subscribers:
