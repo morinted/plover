@@ -300,14 +300,8 @@ class StenoEngine(object):
         self._trigger_hook('machine_state_changed', machine_type, machine_state)
 
     def _consume_engine_command(self, command):
-        if command == 'RESUME':
-            self._set_output(True)
-        elif command == 'TOGGLE':
-            self._toggle_output()
-        elif command == 'QUIT':
+        if command == 'QUIT':
             self._trigger_hook('quit')
-        elif command == 'SUSPEND':
-            self._set_output(False)
         elif command == 'CONFIGURE':
             self._trigger_hook('configure')
         elif command == 'FOCUS':
