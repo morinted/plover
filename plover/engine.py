@@ -99,7 +99,7 @@ class StenoEngine(object):
         self._lock = threading.RLock()
         self._machine = None
         self._machine_state = None
-        self._machine_params = MachineParams(None, None, None)
+        self._machine_params = None
         self._formatter = Formatter()
         self._formatter.set_output(self)
         self._formatter.add_listener(self._on_translated)
@@ -108,7 +108,6 @@ class StenoEngine(object):
         self._translator.add_listener(self._formatter.format)
         self._dictionaries = self._translator.get_dictionary()
         self._dictionaries_manager = DictionaryLoadingManager()
-        self._running_state = self._translator.get_state()
         self._suggestions = Suggestions(self._dictionaries)
         self._keyboard_emulation = keyboard_emulation
         self._hooks = { hook: [] for hook in self.HOOKS }
@@ -142,13 +141,31 @@ class StenoEngine(object):
 
     def _stop(self):
         self._stop_extensions(self._running_extensions.keys())
-        if self._machine is not None:
-            self._machine.stop_capture()
-            self._machine = None
+        self._stop_machine()
 
     def _start(self):
         self._set_output(self._config.get_auto_start())
         self._update(full=True)
+
+    def _start_machine(self):
+        if self._machine_params is None or self._machine is not None:
+            return
+        try:
+            machine_class = registry.get_plugin('machine', self._machine_params.type).obj
+        except Exception as e:
+            raise InvalidConfigurationError(str(e))
+        self._machine = machine_class(self._machine_params.options)
+        self._machine.set_suppression(True)
+        self._machine.set_keymap(self._machine_params.keymap)
+        self._machine.add_state_callback(self._machine_state_callback)
+        self._machine.add_stroke_callback(self._machine_stroke_callback)
+        self._machine.start_capture()
+
+    def _stop_machine(self):
+        if self._machine is None:
+            return
+        self._machine.stop_capture()
+        self._machine = None
 
     def _update(self, config_update=None, full=False, reset_machine=False):
         original_config = self._config.as_dict()
@@ -194,31 +211,10 @@ class StenoEngine(object):
                                        config['machine_specific_options'],
                                        config['system_keymap'])
         if reset_machine or machine_params != self._machine_params:
-            if self._machine is not None:
-                self._machine.stop_capture()
-                self._machine = None
-            machine_type = config['machine_type']
-            machine_options = config['machine_specific_options']
-            try:
-                machine_class = registry.get_plugin('machine', machine_type).obj
-            except Exception as e:
-                raise InvalidConfigurationError(str(e))
-            log.info('setting machine: %s', machine_type)
-            self._machine = machine_class(machine_options)
-            self._machine.set_suppression(self._is_running)
-            self._machine.add_state_callback(self._machine_state_callback)
-            self._machine.add_stroke_callback(self._machine_stroke_callback)
+            self._stop_machine()
             self._machine_params = machine_params
-            update_keymap = True
-            start_machine = True
-        elif self._machine is not None:
-            update_keymap = 'system_keymap' in config_update
-        if update_keymap:
-            machine_keymap = config['system_keymap']
-            if machine_keymap is not None:
-                self._machine.set_keymap(machine_keymap)
-        if start_machine:
-            self._machine.start_capture()
+            if self._is_running:
+                self._start_machine()
         # Update running extensions.
         enabled_extensions = config['enabled_extensions']
         running_extensions = set(self._running_extensions)
@@ -286,11 +282,9 @@ class StenoEngine(object):
             return
         self._is_running = enabled
         if enabled:
-            self._translator.set_state(self._running_state)
+            self._start_machine()
         else:
-            self._translator.clear_state()
-        if self._machine is not None:
-            self._machine.set_suppression(enabled)
+            self._stop_machine()
         self._trigger_hook('output_changed', enabled)
 
     def _machine_state_callback(self, machine_state):

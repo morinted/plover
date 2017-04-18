@@ -128,18 +128,18 @@ class EngineTestCase(unittest.TestCase):
             # Startup.
             self.engine.start()
             self.assertEqual(self.events, [
-                ('machine_state_changed', ('Fake', 'initializing'), {}),
-                ('machine_state_changed', ('Fake', 'connected'), {}),
                 ('config_changed', (self.cfg.as_dict(),), {}),
             ])
-            self.assertIsNotNone(FakeMachine.instance)
-            self.assertFalse(FakeMachine.instance.is_suppressed)
+            self.assertIsNone(FakeMachine.instance)
             # Output enabled.
             self.events = []
             self.engine.output = True
             self.assertEqual(self.events, [
+                ('machine_state_changed', ('Fake', 'initializing'), {}),
+                ('machine_state_changed', ('Fake', 'connected'), {}),
                 ('output_changed', (True,), {}),
             ])
+            self.assertIsNotNone(FakeMachine.instance)
             self.assertTrue(FakeMachine.instance.is_suppressed)
             # Machine reconnection.
             self.events = []
@@ -155,13 +155,12 @@ class EngineTestCase(unittest.TestCase):
             self.events = []
             self.engine.output = False
             self.assertEqual(self.events, [
+                ('machine_state_changed', ('Fake', 'stopped'), {}),
                 ('output_changed', (False,), {}),
             ])
-            self.assertFalse(FakeMachine.instance.is_suppressed)
+            self.assertIsNone(FakeMachine.instance)
             # Stopped.
             self.events = []
             self.engine.quit()
             self.assertEqual(self.events, [
-                ('machine_state_changed', ('Fake', 'stopped'), {}),
             ])
-            self.assertIsNone(FakeMachine.instance)
