@@ -92,7 +92,7 @@ class StenoEngine(object):
     quit
     '''.split()
 
-    def __init__(self, config, keyboard_emulation):
+    def __init__(self, config, keyboard_emulation_class):
         self._config = config
         self._is_running = False
         self._queue = Queue()
@@ -109,7 +109,8 @@ class StenoEngine(object):
         self._dictionaries = self._translator.get_dictionary()
         self._dictionaries_manager = DictionaryLoadingManager()
         self._suggestions = Suggestions(self._dictionaries)
-        self._keyboard_emulation = keyboard_emulation
+        self._keyboard_emulation_class = keyboard_emulation_class
+        self._keyboard_emulation = None
         self._hooks = { hook: [] for hook in self.HOOKS }
         self._running_extensions = {}
 
@@ -165,6 +166,14 @@ class StenoEngine(object):
             return
         self._machine.stop_capture()
         self._machine = None
+
+    def _start_keyboard_emulation(self):
+        self._keyboard_emulation = self._keyboard_emulation_class()
+        self._keyboard_emulation.start()
+
+    def _stop_keyboard_emulation(self):
+        self._keyboard_emulation.cancel()
+        self._keyboard_emulation = None
 
     def _update(self, config_update=None, full=False, reset_machine=False):
         original_config = self._config.as_dict()
@@ -282,7 +291,9 @@ class StenoEngine(object):
         self._is_running = enabled
         if enabled:
             self._start_machine()
+            self._start_keyboard_emulation()
         else:
+            self._stop_keyboard_emulation()
             self._stop_machine()
         self._trigger_hook('output_changed', enabled)
 

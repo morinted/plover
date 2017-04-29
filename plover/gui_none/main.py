@@ -16,7 +16,7 @@ def show_error(title, message):
 
 def main(config):
 
-    engine = Engine(config, KeyboardEmulation())
+    engine = Engine(config, KeyboardEmulation)
     if not engine.load_config():
         return 3
     quitting = Event()

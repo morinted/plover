@@ -66,6 +66,7 @@ class Keyboard(StenotypeBase):
         self._initializing()
         try:
             self._keyboard_capture = KeyboardCapture()
+            self._keyboard_capture.set_machine_instance(self._keyboard_capture)
             self._keyboard_capture.key_down = self._key_down
             self._keyboard_capture.key_up = self._key_up
             self._grab()
@@ -79,6 +80,7 @@ class Keyboard(StenotypeBase):
         """Stop listening for output from the stenotype machine."""
         if self._keyboard_capture is not None:
             self._grab()
+            self._keyboard_capture.set_machine_instance(None)
             self._keyboard_capture.cancel()
             self._keyboard_capture = None
         self._stopped()

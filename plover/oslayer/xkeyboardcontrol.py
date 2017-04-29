@@ -34,7 +34,7 @@ from Xlib import X, XK, display
 from Xlib.ext import xinput, xtest
 from Xlib.ext.ge import GenericEventCode
 
-from plover.key_combo import add_modifiers_aliases, parse_key_combo
+from plover.key_combo import add_modifiers_aliases, KeyCombo
 from plover import log
 
 
@@ -154,6 +154,7 @@ class KeyboardCapture(threading.Thread):
         self.context = None
         self._down_keys = set()
         self._grabbed_keycodes = set()
+        self._suppress_keyboard = False
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
@@ -228,9 +229,10 @@ class KeyboardCapture(threading.Thread):
             if event.evtype not in (xinput.KeyPress, xinput.KeyRelease):
                 continue
             assert event.data.sourceid in self.devices
-            # Ignore if a modifier is set.
-            if (event.data.mods.effective_mods & ~0b10000 & 0xFF):
-                continue
+            if not self._suppress_keyboard:
+                # Ignore if a modifier is set.
+                if (event.data.mods.effective_mods & ~0b10000 & 0xFF):
+                    continue
             keycode = event.data.detail
             if keycode in self._grabbed_keycodes:
                 # Only notify grabbed keys.
@@ -248,6 +250,8 @@ class KeyboardCapture(threading.Thread):
 
     def cancel(self):
         """Stop listening for keyboard events."""
+        if self._suppress_keyboard:
+            self.suppress_keyboard(False)
         self.grab_keys()
         # Wake up the capture thread...
         os.write(self.pipe[1], b'quit')
@@ -283,6 +287,38 @@ class KeyboardCapture(threading.Thread):
             self._grabbed_keycodes.add(keycode)
         assert self._grabbed_keycodes == grabbed_keycodes
         self.display.sync()
+
+    def _grab_device(self, deviceid):
+        self.window.xinput_grab_device(deviceid,
+                                       X.CurrentTime,
+                                       xinput.GrabModeAsync,
+                                       xinput.GrabModeAsync,
+                                       True,
+                                       XINPUT_EVENT_MASK)
+
+    def _ungrab_device(self, deviceid):
+        self.display.xinput_ungrab_device(deviceid, X.CurrentTime)
+
+    def suppress_keyboard(self, enable):
+        if self._suppress_keyboard == enable:
+            return
+        self._suppress_keyboard = enable
+        fn = self._grab_device if enable else self._ungrab_device
+        for deviceid in self.devices:
+            fn(deviceid)
+        self.display.sync()
+
+    machine_instance = None
+
+    @classmethod
+    def set_machine_instance(cls, machine_instance):
+        assert cls.machine_instance is None or machine_instance is None
+        cls.machine_instance = machine_instance
+
+    @classmethod
+    def suppress_machine(cls, enable):
+        if cls.machine_instance is not None:
+            cls.machine_instance.suppress_keyboard(enable)
 
 
 # Keysym to Unicode conversion table.
@@ -1132,7 +1168,7 @@ class KeyboardEmulation(object):
     def __init__(self):
         """Prepare to emulate keyboard events."""
         self.display = display.Display()
-        self._update_keymap()
+        self._key_combo = KeyCombo(self._get_keycode_from_keystring)
 
     def _update_keymap(self):
         '''Analyse keymap, build a mapping of keysym to (keycode + modifiers),
@@ -1192,6 +1228,20 @@ class KeyboardEmulation(object):
         # Get modifier mapping.
         self.modifier_mapping = self.display.get_modifier_mapping()
 
+    def _send_key_combo(self, key_events):
+        for keycode, pressed in key_events:
+            event_type = X.KeyPress if pressed else X.KeyRelease
+            xtest.fake_input(self.display, event_type, keycode)
+
+    def start(self):
+        self._update_keymap()
+
+    def cancel(self):
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
+            self.display.sync()
+
     def send_backspaces(self, number_of_backspaces):
         """Emulate the given number of backspaces.
 
@@ -1202,6 +1252,9 @@ class KeyboardEmulation(object):
         number_of_backspace -- The number of backspaces to emulate.
 
         """
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
         for x in range(number_of_backspaces):
             self._send_keycode(self.backspace_mapping.keycode,
                                self.backspace_mapping.modifiers)
@@ -1218,13 +1271,15 @@ class KeyboardEmulation(object):
 
         """
         assert isinstance(s, text_type)
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
         for char in s:
             keysym = uchr_to_keysym(char)
             mapping = self._get_mapping(keysym)
             if mapping is None:
                 continue
-            self._send_keycode(mapping.keycode,
-                               mapping.modifiers)
+            self._send_keycode(mapping.keycode, mapping.modifiers)
         self.display.sync()
 
     def send_key_combination(self, combo_string):
@@ -1249,15 +1304,13 @@ class KeyboardEmulation(object):
         and release the Tab key, and then release the left Alt key.
 
         """
-        # Parse and validate combo.
-        key_events = [
-            (keycode, X.KeyPress if pressed else X.KeyRelease) for keycode, pressed
-            in parse_key_combo(combo_string, self._get_keycode_from_keystring)
-        ]
-        # Emulate the key combination by sending key events.
-        for keycode, event_type in key_events:
-            xtest.fake_input(self.display, event_type, keycode)
+        if combo_string.startswith('#'):
+            combo_string = combo_string[1:]
+        elif self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+        self._send_key_combo(self._key_combo.parse(combo_string))
         self.display.sync()
+        KeyboardCapture.suppress_machine(bool(self._key_combo))
 
     def _send_keycode(self, keycode, modifiers=0):
         """Emulate a key press and release.

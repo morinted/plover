@@ -8,8 +8,8 @@ from plover.gui_none.add_translation import AddTranslation
 
 class Engine(StenoEngine, Thread):
 
-    def __init__(self, config, keyboard_emulation):
-        StenoEngine.__init__(self, config, keyboard_emulation)
+    def __init__(self, config, keyboard_emulation_class):
+        StenoEngine.__init__(self, config, keyboard_emulation_class)
         Thread.__init__(self)
         self.name += '-engine'
         self._add_translation = AddTranslation(self)

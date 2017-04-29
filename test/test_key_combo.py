@@ -1,5 +1,5 @@
 
-from plover.key_combo import parse_key_combo
+from plover.key_combo import KeyCombo
 
 from . import TestCase
 
@@ -8,7 +8,8 @@ class KeyComboParserTest(TestCase):
 
     def test_noop(self):
         for combo_string in ('', '   '):
-            self.assertEqual(parse_key_combo(combo_string), [])
+            kc = KeyCombo()
+            self.assertEqual(kc.parse(combo_string), [])
 
     def test_syntax_error(self):
         for combo_string in (
@@ -33,8 +34,10 @@ class KeyComboParserTest(TestCase):
             msg = 'parse_key_combo(%r): SyntaxError not raised' % (
                 combo_string,
             )
+            kc = KeyCombo()
             with self.assertRaisesWithMessage(SyntaxError, msg):
-                parse_key_combo(combo_string)
+                kc.parse(combo_string)
+            self.assertFalse(kc)
 
     def test_already_pressed(self):
         for combo_string in (
@@ -48,8 +51,10 @@ class KeyComboParserTest(TestCase):
             msg = 'parse_key_combo(%r): ValueError not raised' % (
                 combo_string,
             )
+            kc = KeyCombo()
             with self.assertRaisesWithMessage(ValueError, msg):
-                parse_key_combo(combo_string)
+                kc.parse(combo_string)
+            self.assertFalse(kc)
 
     def test_stacking(self):
         for combo_string_variants, expected in (
@@ -68,8 +73,9 @@ class KeyComboParserTest(TestCase):
         ):
             expected = [s.strip() for s in expected.split()]
             for combo_string in combo_string_variants:
+                kc = KeyCombo()
                 result = ['%s%s' % ('+' if pressed else '-', key)
-                          for key, pressed in parse_key_combo(combo_string)]
+                          for key, pressed in kc.parse(combo_string)]
                 msg = (
                     'parse_key_combo(%r):\n'
                     ' result  : %r\n'
@@ -77,6 +83,7 @@ class KeyComboParserTest(TestCase):
                     % (combo_string, result, expected)
                 )
                 self.assertEqual(result, expected, msg=msg)
+                self.assertFalse(kc)
 
     def test_bad_keyname(self):
         name2code = { c: c for c in '123abc' }
@@ -84,15 +91,18 @@ class KeyComboParserTest(TestCase):
         msg = 'parse_key_combo(%r): ValueError not raised' % (
             combo_string,
         )
+        kc = KeyCombo(name2code.get)
         with self.assertRaisesWithMessage(ValueError, msg):
-            parse_key_combo(combo_string, key_name_to_key_code=name2code.get)
+            kc.parse(combo_string)
+        self.assertFalse(kc)
 
     def test_aliasing(self):
         name2code = {
             '1'     : 10,
             'exclam': 10,
         }
-        self.assertListEqual(list(parse_key_combo('1 exclam', key_name_to_key_code=name2code.get)),
+        kc = KeyCombo(name2code.get)
+        self.assertListEqual(list(kc.parse('1 exclam')),
                              [(10, True), (10, False),
                               (10, True), (10, False)])
 
@@ -103,7 +113,9 @@ class KeyComboParserTest(TestCase):
             msg = 'parse_key_combo(%r): ValueError not raised' % (
                 combo_string,
             )
+            kc = KeyCombo(name2code.get)
             with self.assertRaisesWithMessage(ValueError, msg):
                 # Yielding the first key event should
                 # only happen after full validation.
-                parse_key_combo(combo_string, key_name_to_key_code=name2code.get)
+                kc.parse(combo_string)
+            self.assertFalse(kc)

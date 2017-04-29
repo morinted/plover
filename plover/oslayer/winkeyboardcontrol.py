@@ -23,7 +23,7 @@ from ctypes import windll, wintypes
 # Python 2/3 compatibility.
 from six.moves import winreg
 
-from plover.key_combo import parse_key_combo
+from plover.key_combo import KeyCombo
 from plover.oslayer.winkeyboardlayout import KeyboardLayout
 from plover import log
 from plover.misc import characters
@@ -177,6 +177,10 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         self._queue = multiprocessing.Queue()
         self._grabbed_keycodes_bitmask = multiprocessing.Array(ctypes.c_uint64, (max(SCANCODE_TO_KEY.keys()) + 63) // 64)
         self._grabbed_keycodes_bitmask[:] = (0xffffffffffffffff,) * len(self._grabbed_keycodes_bitmask)
+        self._suppress_keyboard = False
+
+    def suppress_keyboard(self, enable):
+        self._suppress_keyboard = enable
 
     @staticmethod
     def _update_registry():
@@ -256,19 +260,21 @@ class KeyboardCaptureProcess(multiprocessing.Process):
             if (event.flags & 0x10):
                 # Ignore simulated events (e.g. from KeyboardEmulation).
                 return False
-            if event.vkCode in self.PASSTHROUGH_KEYS:
-                if pressed:
-                    passthrough_down_keys.add(event.vkCode)
-                else:
-                    passthrough_down_keys.discard(event.vkCode)
-            if passthrough_down_keys:
-                # Modifier(s) pressed, ignore.
-                return False
+            suppress = self._suppress_keyboard
+            if not suppress:
+                if event.vkCode in self.PASSTHROUGH_KEYS:
+                    if pressed:
+                        passthrough_down_keys.add(event.vkCode)
+                    else:
+                        passthrough_down_keys.discard(event.vkCode)
+                if passthrough_down_keys:
+                    # Modifier(s) pressed, ignore.
+                    return False
             grabbed = bool(self._grabbed_keycodes_bitmask[event.scanCode // 64] & (1 << (event.scanCode % 64)))
             if grabbed:
                 # Only notify grabbed keys.
                 self._queue.put((SCANCODE_TO_KEY[event.scanCode], pressed))
-            return grabbed
+            return suppress or grabbed
 
         hook_id = None
 
@@ -324,6 +330,7 @@ class KeyboardCapture(threading.Thread):
     def __init__(self):
         super(KeyboardCapture, self).__init__()
         self._grabbed_keys = set()
+        self._suppress_keyboard = False
         self.key_down = lambda key: None
         self.key_up = lambda key: None
         self._proc = KeyboardCaptureProcess()
@@ -351,11 +358,33 @@ class KeyboardCapture(threading.Thread):
         self._grabbed_keys = set(keys)
         self._proc.grab_keys(self._grabbed_keys)
 
+    def suppress_keyboard(self, enable):
+        if self._suppress_keyboard == enable:
+            return
+        self._suppress_keyboard = enable
+        self._proc.suppress_keyboard(enable)
+
+    machine_instance = None
+
+    @classmethod
+    def set_machine_instance(cls, machine_instance):
+        assert cls.machine_instance is None or machine_instance is None
+        cls.machine_instance = machine_instance
+
+    @classmethod
+    def suppress_machine(cls, enable):
+        if cls.machine_instance is not None:
+            cls.machine_instance.suppress_keyboard(enable)
 
 class KeyboardEmulation(object):
 
     def __init__(self):
         self.keyboard_layout = KeyboardLayout()
+        self._key_combo = KeyCombo(self.keyboard_layout.keyname_to_vk.get)
+
+    def _send_key_combo(self, key_events):
+        for keycode, pressed in key_events:
+            self._key_event(keycode, pressed)
 
     # Sends input types to buffer
     @staticmethod
@@ -422,11 +451,25 @@ class KeyboardEmulation(object):
                   for code in char]
         self._send_input(*inputs)
 
+    def start(self):
+        pass
+
+    def cancel(self):
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
+
     def send_backspaces(self, number_of_backspaces):
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
         for _ in range(number_of_backspaces):
             self._key_press('\x08')
 
     def send_string(self, s):
+        if self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
         self._refresh_keyboard_layout()
         for char in characters(s):
             if char in self.keyboard_layout.char_to_vk_ss:
@@ -451,10 +494,11 @@ class KeyboardEmulation(object):
         example, Alt_L(Tab) means to hold the left Alt key down, press
         and release the Tab key, and then release the left Alt key.
         """
+        if combo_string.startswith('#'):
+            combo_string = combo_string[1:]
+        elif self._key_combo:
+            self._send_key_combo(self._key_combo.reset())
         # Make sure keyboard layout is up-to-date.
         self._refresh_keyboard_layout()
-        # Parse and validate combo.
-        key_events = parse_key_combo(combo_string, self.keyboard_layout.keyname_to_vk.get)
-        # Send events...
-        for keycode, pressed in key_events:
-            self._key_event(keycode, pressed)
+        self._send_key_combo(self._key_combo.parse(combo_string))
+        KeyboardCapture.suppress_machine(bool(self._key_combo))

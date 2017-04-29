@@ -47,7 +47,7 @@ from Quartz import (
 
 from plover.misc import characters
 from plover.oslayer.osxkeyboardlayout import KeyboardLayout
-from plover.key_combo import add_modifiers_aliases, parse_key_combo, KEYNAME_TO_CHAR
+from plover.key_combo import add_modifiers_aliases, KeyCombo, KEYNAME_TO_CHAR
 import plover.log
 
 
@@ -313,6 +313,29 @@ class KeyboardEmulation(object):
 
     def __init__(self):
         self._layout = KeyboardLayout()
+        def name_to_code(name):
+            # Static key codes
+            code = KEYNAME_TO_KEYCODE.get(name)
+            if code is not None:
+                pass
+            # Dead keys
+            elif name.startswith('dead_'):
+                code, mod = self._layout.deadkey_symbol_to_key_sequence(
+                    DEADKEY_SYMBOLS.get(name)
+                )[0]
+            # Normal keys
+            else:
+                char = KEYNAME_TO_CHAR.get(name, name)
+                code, mods = self._layout.char_to_key_sequence(char)[0]
+            return code
+        self._key_combo = KeyCombo(name_to_code)
+
+    def start(self):
+        pass
+
+    def cancel(self):
+        # FIXME: stop keyboard layout watcher.
+        pass
 
     @staticmethod
     def send_backspaces(number_of_backspaces):
@@ -412,25 +435,7 @@ class KeyboardEmulation(object):
                 and release the Tab key, and then release the left Alt key.
 
         """
-        def name_to_code(name):
-            # Static key codes
-            code = KEYNAME_TO_KEYCODE.get(name)
-            if code is not None:
-                pass
-            # Dead keys
-            elif name.startswith('dead_'):
-                code, mod = self._layout.deadkey_symbol_to_key_sequence(
-                    DEADKEY_SYMBOLS.get(name)
-                )[0]
-            # Normal keys
-            else:
-                char = KEYNAME_TO_CHAR.get(name, name)
-                code, mods = self._layout.char_to_key_sequence(char)[0]
-            return code
-        # Parse and validate combo.
-        key_events = parse_key_combo(combo_string, name_to_code)
-        # Send events...
-        self._send_sequence(key_events)
+        self._send_sequence(self._key_combo.parse(combo_string))
 
     @staticmethod
     def _modifier_to_keycodes(modifier):

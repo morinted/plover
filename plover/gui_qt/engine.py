@@ -29,8 +29,8 @@ class Engine(StenoEngine, QThread):
     signal_lookup = pyqtSignal()
     signal_quit = pyqtSignal()
 
-    def __init__(self, config, keyboard_emulation):
-        StenoEngine.__init__(self, config, keyboard_emulation)
+    def __init__(self, config, keyboard_emulation_class):
+        StenoEngine.__init__(self, config, keyboard_emulation_class)
         QThread.__init__(self)
         self.hook_connect('quit', QCoreApplication.quit)
         self._signals = {}

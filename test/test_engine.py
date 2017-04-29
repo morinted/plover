@@ -75,6 +75,12 @@ class FakeMachine(StenotypeBase):
 
 class FakeKeyboardEmulation(object):
 
+    def start(self):
+        pass
+
+    def cancel(self):
+        pass
+
     def send_backspaces(self, b):
         pass
 
@@ -100,10 +106,9 @@ class EngineTestCase(unittest.TestCase):
         FakeMachine.instance = None
         self.reg = Registry()
         self.reg.register_plugin('machine', 'Fake', FakeMachine)
-        self.kbd = FakeKeyboardEmulation()
         self.cfg = FakeConfig(**kwargs)
         self.events = []
-        self.engine = FakeEngine(self.cfg, self.kbd)
+        self.engine = FakeEngine(self.cfg, FakeKeyboardEmulation)
         def hook_callback(hook, *args, **kwargs):
             self.events.append((hook, args, kwargs))
         for hook in self.engine.HOOKS:

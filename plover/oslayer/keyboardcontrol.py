@@ -46,6 +46,7 @@ if __name__ == '__main__':
 
     kc = KeyboardCapture()
     ke = KeyboardEmulation()
+    ke.start()
 
     pressed = set()
     status = u'pressed: '

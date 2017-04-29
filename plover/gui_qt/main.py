@@ -59,7 +59,7 @@ class Application(object):
         self._timer.timeout.connect(lambda: None)
         self._timer.start(1000)
 
-        self._engine = Engine(config, KeyboardEmulation())
+        self._engine = Engine(config, KeyboardEmulation)
 
         self._win = MainWindow(self._engine, use_qt_notifications)
 
