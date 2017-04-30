@@ -215,12 +215,16 @@ class KeyboardCapture(threading.Thread):
                                       kCGEventFlagMaskNonCoalesced)
             has_nonsupressible_modifiers = \
                 CGEventGetFlags(event) & ~suppressible_modifiers
+            # Ignore if a modifier is set.
             if has_nonsupressible_modifiers and event_type == kCGEventKeyDown:
                 return PASS_EVENT_THROUGH
-
             keycode = CGEventGetIntegerValueField(
                 event, kCGKeyboardEventKeycode)
             key = KEYCODE_TO_KEY.get(keycode)
+            if key is None:
+                # Not a supported key, ignore...
+                return PASS_EVENT_THROUGH
+
             self._async_dispatch(key, event_type)
             if key in self._grabbed_keys:
                 return SUPPRESS_EVENT

@@ -175,8 +175,8 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         self._update_registry()
         self._tid = None
         self._queue = multiprocessing.Queue()
-        self._grabbed_keys_bitmask = multiprocessing.Array(ctypes.c_uint64, (max(SCANCODE_TO_KEY.keys()) + 63) // 64)
-        self._grabbed_keys_bitmask[:] = (0xffffffffffffffff,) * len(self._grabbed_keys_bitmask)
+        self._grabbed_keycodes_bitmask = multiprocessing.Array(ctypes.c_uint64, (max(SCANCODE_TO_KEY.keys()) + 63) // 64)
+        self._grabbed_keycodes_bitmask[:] = (0xffffffffffffffff,) * len(self._grabbed_keycodes_bitmask)
 
     @staticmethod
     def _update_registry():
@@ -250,7 +250,6 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         self._tid = windll.kernel32.GetCurrentThreadId()
         self._queue.put(self._tid)
 
-        down_keys = set()
         passthrough_down_keys = set()
 
         def on_key(pressed, event):
@@ -262,19 +261,13 @@ class KeyboardCaptureProcess(multiprocessing.Process):
                     passthrough_down_keys.add(event.vkCode)
                 else:
                     passthrough_down_keys.discard(event.vkCode)
-            key = SCANCODE_TO_KEY.get(event.scanCode)
-            if key is None:
-                # Unhandled, ignore and don't suppress.
+            if passthrough_down_keys:
+                # Modifier(s) pressed, ignore.
                 return False
-            grabbed = bool(self._grabbed_keys_bitmask[event.scanCode // 64] & (1 << (event.scanCode % 64)))
-            if pressed:
-                if passthrough_down_keys:
-                    # Modifier(s) pressed, ignore.
-                    return False
-                down_keys.add(key)
-            else:
-                down_keys.discard(key)
-            self._queue.put((key, pressed))
+            grabbed = bool(self._grabbed_keycodes_bitmask[event.scanCode // 64] & (1 << (event.scanCode % 64)))
+            if grabbed:
+                # Only notify grabbed keys.
+                self._queue.put((SCANCODE_TO_KEY[event.scanCode], pressed))
             return grabbed
 
         hook_id = None
@@ -315,11 +308,11 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         self._queue.put((None, None))
 
     def grab_keys(self, keys):
-        bitmask = [0] * len(self._grabbed_keys_bitmask)
+        bitmask = [0] * len(self._grabbed_keycodes_bitmask)
         for key in keys:
             code = KEY_TO_SCANCODE[key]
             bitmask[code // 64] |= (1 << (code % 64))
-        self._grabbed_keys_bitmask[:] = bitmask
+        self._grabbed_keycodes_bitmask[:] = bitmask
 
     def get(self):
         return self._queue.get()

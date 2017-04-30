@@ -153,7 +153,7 @@ class KeyboardCapture(threading.Thread):
         self.name += '-capture'
         self.context = None
         self.key_events_to_ignore = []
-        self._grabbed_keys = set()
+        self._grabbed_keycodes = set()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
@@ -228,19 +228,17 @@ class KeyboardCapture(threading.Thread):
             if event.evtype not in (xinput.KeyPress, xinput.KeyRelease):
                 continue
             assert event.data.sourceid in self.devices
-            keycode = event.data.detail
-            modifiers = event.data.mods.effective_mods & ~0b10000 & 0xFF
-            key = KEYCODE_TO_KEY.get(keycode)
-            if key is None:
-                # Not a supported key, ignore...
+            # Ignore if a modifier is set.
+            if (event.data.mods.effective_mods & ~0b10000 & 0xFF):
                 continue
-            # ...or pass it on to a callback method.
-            if event.evtype == xinput.KeyPress:
-                # Ignore event if a modifier is set.
-                if modifiers == 0:
+            keycode = event.data.detail
+            if keycode in self._grabbed_keycodes:
+                # Only notify grabbed keys.
+                key = KEYCODE_TO_KEY[keycode]
+                if event.evtype == xinput.KeyPress:
                     self.key_down(key)
-            elif event.evtype == xinput.KeyRelease:
-                self.key_up(key)
+                else:
+                    self.key_up(key)
 
     def cancel(self):
         """Stop listening for keyboard events."""
@@ -268,16 +266,16 @@ class KeyboardCapture(threading.Thread):
                                               (0, X.Mod2Mask))
 
     def grab_keys(self, keys=()):
-        keys = set(keys)
-        if self._grabbed_keys == keys:
+        grabbed_keycodes = set(KEY_TO_KEYCODE[k] for k in keys)
+        if self._grabbed_keycodes == grabbed_keycodes:
             return
-        for key in self._grabbed_keys - keys:
-            self.ungrab_key(KEY_TO_KEYCODE[key])
-            self._grabbed_keys.remove(key)
-        for key in keys - self._grabbed_keys:
-            self.grab_key(KEY_TO_KEYCODE[key])
-            self._grabbed_keys.add(key)
-        assert self._grabbed_keys == keys
+        for keycode in self._grabbed_keycodes - grabbed_keycodes:
+            self.ungrab_key(keycode)
+            self._grabbed_keycodes.remove(keycode)
+        for keycode in grabbed_keycodes - self._grabbed_keycodes:
+            self.grab_key(keycode)
+            self._grabbed_keycodes.add(keycode)
+        assert self._grabbed_keycodes == grabbed_keycodes
         self.display.sync()
 
 
