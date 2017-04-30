@@ -37,10 +37,10 @@ class Keyboard(StenotypeBase):
         self._keyboard_capture = None
         self._update_bindings()
 
-    def _suppress(self):
+    def _grab(self):
         if self._keyboard_capture is None:
             return
-        self._keyboard_capture.suppress_keyboard(self._bindings.keys())
+        self._keyboard_capture.grab_keys(self._bindings.keys())
 
     def _update_bindings(self):
         self._bindings = dict(self.keymap.get_bindings())
@@ -52,9 +52,9 @@ class Keyboard(StenotypeBase):
                     self._bindings[key] = None
                     self._arpeggiate_key = key
                 else:
-                    # Don't suppress arpeggiate key if it's not used.
+                    # Don't grab arpeggiate key if it's not used.
                     del self._bindings[key]
-        self._suppress()
+        self._grab()
 
     def set_keymap(self, keymap):
         super(Keyboard, self).set_keymap(keymap)
@@ -68,7 +68,7 @@ class Keyboard(StenotypeBase):
             self._keyboard_capture = KeyboardCapture()
             self._keyboard_capture.key_down = self._key_down
             self._keyboard_capture.key_up = self._key_up
-            self._suppress()
+            self._grab()
             self._keyboard_capture.start()
         except:
             self._error()
@@ -78,7 +78,7 @@ class Keyboard(StenotypeBase):
     def stop_capture(self):
         """Stop listening for output from the stenotype machine."""
         if self._keyboard_capture is not None:
-            self._suppress()
+            self._grab()
             self._keyboard_capture.cancel()
             self._keyboard_capture = None
         self._stopped()

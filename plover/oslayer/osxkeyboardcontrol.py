@@ -176,7 +176,7 @@ class KeyboardCapture(threading.Thread):
         self._loop = None
         self._event_queue = Queue()  # Drained by event handler thread.
 
-        self._suppressed_keys = set()
+        self._grabbed_keys = set()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
@@ -222,7 +222,7 @@ class KeyboardCapture(threading.Thread):
                 event, kCGKeyboardEventKeycode)
             key = KEYCODE_TO_KEY.get(keycode)
             self._async_dispatch(key, event_type)
-            if key in self._suppressed_keys:
+            if key in self._grabbed_keys:
                 return SUPPRESS_EVENT
             return PASS_EVENT_THROUGH
 
@@ -266,8 +266,8 @@ class KeyboardCapture(threading.Thread):
         self.join()
         self._loop = None
 
-    def suppress_keyboard(self, suppressed_keys=()):
-        self._suppressed_keys = set(suppressed_keys)
+    def grab_keys(self, keys=()):
+        self._grabbed_keys = set(keys)
 
     def _async_dispatch(self, key, event_type):
         """

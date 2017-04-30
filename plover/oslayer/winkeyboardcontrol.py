@@ -175,8 +175,8 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         self._update_registry()
         self._tid = None
         self._queue = multiprocessing.Queue()
-        self._suppressed_keys_bitmask = multiprocessing.Array(ctypes.c_uint64, (max(SCANCODE_TO_KEY.keys()) + 63) // 64)
-        self._suppressed_keys_bitmask[:] = (0xffffffffffffffff,) * len(self._suppressed_keys_bitmask)
+        self._grabbed_keys_bitmask = multiprocessing.Array(ctypes.c_uint64, (max(SCANCODE_TO_KEY.keys()) + 63) // 64)
+        self._grabbed_keys_bitmask[:] = (0xffffffffffffffff,) * len(self._grabbed_keys_bitmask)
 
     @staticmethod
     def _update_registry():
@@ -266,7 +266,7 @@ class KeyboardCaptureProcess(multiprocessing.Process):
             if key is None:
                 # Unhandled, ignore and don't suppress.
                 return False
-            suppressed = bool(self._suppressed_keys_bitmask[event.scanCode // 64] & (1 << (event.scanCode % 64)))
+            grabbed = bool(self._grabbed_keys_bitmask[event.scanCode // 64] & (1 << (event.scanCode % 64)))
             if pressed:
                 if passthrough_down_keys:
                     # Modifier(s) pressed, ignore.
@@ -275,7 +275,7 @@ class KeyboardCaptureProcess(multiprocessing.Process):
             else:
                 down_keys.discard(key)
             self._queue.put((key, pressed))
-            return suppressed
+            return grabbed
 
         hook_id = None
 
@@ -314,12 +314,12 @@ class KeyboardCaptureProcess(multiprocessing.Process):
         # Wake up capture thread, so it gets a chance to check if it must stop.
         self._queue.put((None, None))
 
-    def suppress_keyboard(self, suppressed_keys):
-        bitmask = [0] * len(self._suppressed_keys_bitmask)
-        for key in suppressed_keys:
+    def grab_keys(self, keys):
+        bitmask = [0] * len(self._grabbed_keys_bitmask)
+        for key in keys:
             code = KEY_TO_SCANCODE[key]
             bitmask[code // 64] |= (1 << (code % 64))
-        self._suppressed_keys_bitmask[:] = bitmask
+        self._grabbed_keys_bitmask[:] = bitmask
 
     def get(self):
         return self._queue.get()
@@ -330,7 +330,7 @@ class KeyboardCapture(threading.Thread):
 
     def __init__(self):
         super(KeyboardCapture, self).__init__()
-        self._suppressed_keys = set()
+        self._grabbed_keys = set()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
         self._proc = KeyboardCaptureProcess()
@@ -338,7 +338,7 @@ class KeyboardCapture(threading.Thread):
 
     def start(self):
         self._proc.start()
-        self._proc.suppress_keyboard(self._suppressed_keys)
+        self._proc.grab_keys(self._grabbed_keys)
         super(KeyboardCapture, self).start()
 
     def run(self):
@@ -354,9 +354,9 @@ class KeyboardCapture(threading.Thread):
         if self.is_alive():
             self.join()
 
-    def suppress_keyboard(self, suppressed_keys=()):
-        self._suppressed_keys = set(suppressed_keys)
-        self._proc.suppress_keyboard(self._suppressed_keys)
+    def grab_keys(self, keys=()):
+        self._grabbed_keys = set(keys)
+        self._proc.grab_keys(self._grabbed_keys)
 
 
 class KeyboardEmulation(object):

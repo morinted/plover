@@ -153,7 +153,7 @@ class KeyboardCapture(threading.Thread):
         self.name += '-capture'
         self.context = None
         self.key_events_to_ignore = []
-        self._suppressed_keys = set()
+        self._grabbed_keys = set()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
@@ -244,7 +244,7 @@ class KeyboardCapture(threading.Thread):
 
     def cancel(self):
         """Stop listening for keyboard events."""
-        self.suppress_keyboard()
+        self.grab_keys()
         # Wake up the capture thread...
         os.write(self.pipe[1], b'quit')
         # ...and wait for it to terminate.
@@ -267,17 +267,17 @@ class KeyboardCapture(threading.Thread):
                                               keycode,
                                               (0, X.Mod2Mask))
 
-    def suppress_keyboard(self, suppressed_keys=()):
-        suppressed_keys = set(suppressed_keys)
-        if self._suppressed_keys == suppressed_keys:
+    def grab_keys(self, keys=()):
+        keys = set(keys)
+        if self._grabbed_keys == keys:
             return
-        for key in self._suppressed_keys - suppressed_keys:
+        for key in self._grabbed_keys - keys:
             self.ungrab_key(KEY_TO_KEYCODE[key])
-            self._suppressed_keys.remove(key)
-        for key in suppressed_keys - self._suppressed_keys:
+            self._grabbed_keys.remove(key)
+        for key in keys - self._grabbed_keys:
             self.grab_key(KEY_TO_KEYCODE[key])
-            self._suppressed_keys.add(key)
-        assert self._suppressed_keys == suppressed_keys
+            self._grabbed_keys.add(key)
+        assert self._grabbed_keys == keys
         self.display.sync()
 
 
