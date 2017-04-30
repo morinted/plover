@@ -152,7 +152,7 @@ class KeyboardCapture(threading.Thread):
         threading.Thread.__init__(self)
         self.name += '-capture'
         self.context = None
-        self.key_events_to_ignore = []
+        self._down_keys = set()
         self._grabbed_keycodes = set()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
@@ -236,8 +236,14 @@ class KeyboardCapture(threading.Thread):
                 # Only notify grabbed keys.
                 key = KEYCODE_TO_KEY[keycode]
                 if event.evtype == xinput.KeyPress:
-                    self.key_down(key)
+                    if key in self._down_keys:
+                        # Don't notify auto-repeat events.
+                        pass
+                    else:
+                        self._down_keys.add(key)
+                        self.key_down(key)
                 else:
+                    self._down_keys.discard(key)
                     self.key_up(key)
 
     def cancel(self):
