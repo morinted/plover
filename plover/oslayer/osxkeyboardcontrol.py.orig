@@ -14,7 +14,6 @@ from Quartz import (
     CFRunLoopGetCurrent,
     CFRunLoopRun,
     CFRunLoopStop,
-kCGEventMaskForAllEvents,
     CFRelease,
     CGEventCreate,
     CGEventCreateKeyboardEvent,
@@ -180,8 +179,13 @@ class KeyboardCapture(threading.Thread):
         threading.Thread.__init__(self, name="KeyboardEventTapThread")
         self._loop = None
         self._event_queue = Queue()  # Drained by event handler thread.
-        self._suppress_keyboard = False
+<<<<<<< Updated upstream
+
         self._grabbed_keys = set()
+=======
+        self._suppress_keyboard = False
+        self._suppressed_keys = set()
+>>>>>>> Stashed changes
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
@@ -202,14 +206,15 @@ class KeyboardCapture(threading.Thread):
             PASS_EVENT_THROUGH = event
 
             # Don't pass on meta events meant for this event tap.
-            if event_type == kCGEventTapDisabledByTimeout:
-                # Re-enable the tap and hope we act faster next time
-                CGEventTapEnable(self._tap, True)
-                plover.log.warning(
-                    "Keystrokes may have been missed. "
-                    + "Keyboard event tap has been re-enabled. ")
+            is_unexpected_event = event_type not in self._KEYBOARD_EVENTS
+            if is_unexpected_event:
+                if event_type == kCGEventTapDisabledByTimeout:
+                    # Re-enable the tap and hope we act faster next time
+                    CGEventTapEnable(self._tap, True)
+                    plover.log.warning(
+                        "Keystrokes may have been missed. "
+                        + "Keyboard event tap has been re-enabled. ")
                 return SUPPRESS_EVENT
-
 
             # Don't intercept the event if it has modifiers, allow
             # Fn and Numeric flags so we can suppress the arrow and
@@ -219,39 +224,38 @@ class KeyboardCapture(threading.Thread):
                                       kCGEventFlagMaskNonCoalesced)
             has_nonsupressible_modifiers = \
                 CGEventGetFlags(event) & ~suppressible_modifiers
+<<<<<<< Updated upstream
+            # Ignore if a modifier is set.
+            if has_nonsupressible_modifiers and event_type == kCGEventKeyDown:
+                return PASS_EVENT_THROUGH
+=======
 
             if self._suppress_keyboard:
                 pass
             else:
                 # Ignore if a modifier is set.
                 if has_nonsupressible_modifiers:
-                    print('modifier: pass')
-                    CGEventSetFlags(event, kCGEventFlagMaskShift)
                     return PASS_EVENT_THROUGH
 
-            if event_type in KeyboardCapture._KEYBOARD_EVENTS:
-                keycode = CGEventGetIntegerValueField(
-                    event, kCGKeyboardEventKeycode)
-                print('keycode:', keycode, 'flags:', CGEventGetFlags(event))
-                key = KEYCODE_TO_KEY.get(keycode)
-                if key is None:
-                    # Not a supported key, ignore...
-                    print('key is none: pass')
-                    return PASS_EVENT_THROUGH
+>>>>>>> Stashed changes
+            keycode = CGEventGetIntegerValueField(
+                event, kCGKeyboardEventKeycode)
+            print('keycode:', keycode, 'flags:', CGEventGetFlags(event))
+            key = KEYCODE_TO_KEY.get(keycode)
+            if key is None:
+                # Not a supported key, ignore...
+                return PASS_EVENT_THROUGH
 
-                self._async_dispatch(key, event_type)
-                if key in self._grabbed_keys:
-                    print('grabbed: suppress')
-                    return SUPPRESS_EVENT
-                print('else: pass')
-            CGEventSetFlags(event, kCGEventFlagMaskShift)
+            self._async_dispatch(key, event_type)
+            if key in self._grabbed_keys:
+                return SUPPRESS_EVENT
             return PASS_EVENT_THROUGH
 
         self._tap = CGEventTapCreate(
             kCGSessionEventTap,
             kCGHeadInsertEventTap,
             kCGEventTapOptionDefault,
-            kCGEventMaskForAllEvents,
+            CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp),
             callback, None)
         if self._tap is None:
             # Todo(hesky): See if there is a nice way to show the user what's
@@ -349,8 +353,7 @@ class KeyboardEmulation(object):
 
     def __init__(self):
         self._layout = KeyboardLayout()
-        self._mods_flags = 0 # Manage the held-down modifier flags.
-
+<<<<<<< Updated upstream
         def name_to_code(name):
             # Static key codes
             code = KEYNAME_TO_KEYCODE.get(name)
@@ -368,18 +371,18 @@ class KeyboardEmulation(object):
             return code
         self._key_combo = KeyCombo(name_to_code)
 
-    def _release_key_combo(self):
-        if self._key_combo:
-            self._send_sequence(self._key_combo.reset())
-            self._mods_flags = 0
-            KeyboardCapture.suppress_machine(False)
-
     def start(self):
         pass
 
     def cancel(self):
         # FIXME: stop keyboard layout watcher.
         pass
+=======
+    def _release_key_combo(self):
+        if self._key_combo:
+            self._send_sequence(self._key_combo.reset())
+            KeyboardCapture.suppress_machine(False)
+>>>>>>> Stashed changes
 
         self._release_key_combo()
 
@@ -482,10 +485,6 @@ class KeyboardEmulation(object):
                 and release the Tab key, and then release the left Alt key.
 
         """
-        if combo_string.startswith('#'):
-            combo_string = combo_string[1:]
-        else:
-            self._release_key_combo()
         self._send_sequence(self._key_combo.parse(combo_string))
 
     @staticmethod
@@ -526,14 +525,19 @@ class KeyboardEmulation(object):
             -1
         ).CGEvent()
 
-    def _send_sequence(self, sequence):
+    @staticmethod
+    def _send_sequence(sequence):
         # There is a bug in the event system that seems to cause inconsistent
         # modifiers on key events:
         # http://stackoverflow.com/questions/2008126/cgeventpost-possible-bug-when-simulating-keyboard-events
         # My solution is to manage the state myself.
         # I'm not sure how to deal with caps lock.
         # If mods_flags is not zero at the end then bad things might happen.
+        mods_flags = 0
+        flags_changed = None
+        goal_flags = None
 
+        print(sequence)
         for keycode, key_down in sequence:
             if keycode >= NX_KEY_OFFSET:
                 # Handle media (NX) key.
@@ -542,19 +546,24 @@ class KeyboardEmulation(object):
             else:
                 # Handle regular keycode.
                 if not key_down and keycode in MODIFIER_KEYS_TO_MASKS:
-                    self._mods_flags &= ~MODIFIER_KEYS_TO_MASKS[keycode]
+                    mods_flags &= ~MODIFIER_KEYS_TO_MASKS[keycode]
 
                 if key_down and keycode_needs_fn_mask(keycode):
-                    self._mods_flags |= kCGEventFlagMaskSecondaryFn
+                    mods_flags |= kCGEventFlagMaskSecondaryFn
 
                 event = CGEventCreateKeyboardEvent(
                     OUTPUT_SOURCE, keycode, key_down)
+                if keycode in MODIFIER_KEYS_TO_MASKS:
+                    # http://stackoverflow.com/a/5741384
+                    flags_changed = CGEventCreate(OUTPUT_SOURCE)
+                    CGEventSetType(flags_changed, kCGEventFlagsChanged)
+                    CGEventSetIntegerValueField(flags_changed, kCGKeyboardEventKeycode, keycode)
 
                 if keycode not in MODIFIER_KEYS_TO_MASKS:
                     event_flags = CGEventGetFlags(event)
                     # Add wanted flags, remove unwanted flags.
                     goal_flags = ((event_flags & ~KeyboardEmulation.MODS_MASK)
-                                  | self._mods_flags )
+                                  | mods_flags)
                     if event_flags != goal_flags:
                         CGEventSetFlags(event, goal_flags)
 
@@ -562,9 +571,9 @@ class KeyboardEmulation(object):
                     sleep(0.0005)
 
                 if key_down and keycode in MODIFIER_KEYS_TO_MASKS:
-                    self._mods_flags |= MODIFIER_KEYS_TO_MASKS[keycode]
+                    mods_flags |= MODIFIER_KEYS_TO_MASKS[keycode]
 
                 if not key_down and keycode_needs_fn_mask(keycode):
-                    self._mods_flags &= ~kCGEventFlagMaskSecondaryFn
+                    mods_flags &= ~kCGEventFlagMaskSecondaryFn
 
             CGEventPost(kCGSessionEventTap, event)

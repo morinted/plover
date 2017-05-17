@@ -499,6 +499,6 @@ if __name__ == '__main__':
                 keyname, char, u'’, ‘'.join(combo[1] for combo in sequence),
                 u'’, ‘'.join(str(combo[0]) for combo in sequence)
             ))
-    print(u'No mapping on this layout for characters: ‘{}’'.format(
+    print(u'No mapping on this layout for characters: ‘{’'.format(
         u'’, ‘'.join(unmapped_characters)
     ))

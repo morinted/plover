@@ -30,8 +30,7 @@ import plover.machine.base
 STENO_KEY_CHART = ("S-", "T-", "K-", "P-", "W-", "H-",  # 00
                    "R-", "A-", "O-", "*", "-E", "-U",   # 01
                    "-F", "-R", "-P", "-B", "-L", "-G",  # 10
-                   "-T", "-S", "-D", "-Z", "#")         # 11
-
+                   "-T", "-S", "-D", "-Z", "#", "X")    # 11
 
 class TxBolt(plover.machine.base.SerialStenotypeBase):
     """TX Bolt interface.
@@ -47,7 +46,8 @@ class TxBolt(plover.machine.base.SerialStenotypeBase):
         S- T- P- H- * -F -P -L -T -D
         S- K- W- R- * -R -B -G -S -Z
               A- O-   -E -U
-    '''
+        X
+    ''' # X is an unused bit in most implementations.
 
     def __init__(self, params):
         super(TxBolt, self).__init__(params)
@@ -84,7 +84,7 @@ class TxBolt(plover.machine.base.SerialStenotypeBase):
                     # Starting a new stroke, finish previous one.
                     self._finish_stroke()
                 self._last_key_set = key_set
-                for i in range(5 if key_set == 3 else 6):
+                for i in range(6):
                     if (byte >> i) & 1:
                         key = STENO_KEY_CHART[(key_set * 6) + i]
                         self._pressed_keys.append(key)
