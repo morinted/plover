@@ -16,7 +16,10 @@ import re
 from threading import Thread
 import AppKit
 import Foundation
-from PyObjCTools import AppHelper
+from queue import Queue
+
+import objc
+
 from plover import log
 from plover.misc import popcount_8
 from plover.key_combo import CHAR_TO_KEYNAME
@@ -118,6 +121,29 @@ def get_printable_string(s):
     )
 
 
+class LayoutWatchingCallback(AppKit.NSObject):
+    def init(self):
+        """
+        LayoutWatchingCallback is handed to an NSNotificationCenter
+        to receive the keyboard layout change event.
+        
+        After creation, the layout to be updated must be sent.
+        """
+        # objc-style object initialization.
+        self = objc.super(LayoutWatchingCallback, self).init()
+        if self is None:
+            return None
+        self._layout = None
+        return self
+
+    def setLayout_(self, newLayout):
+        self._layout = newLayout
+
+    def layoutChanged_(self, event):
+        log.info('Mac keyboard layout changed, updating')
+        self._layout.update_layout()
+
+
 class KeyboardLayout(object):
     def __init__(self, watch_layout=True):
         self._char_to_key_sequence = None
@@ -125,6 +151,8 @@ class KeyboardLayout(object):
         self._modifier_masks = None
         self._deadkey_symbol_to_key_sequence = None
 
+        # Queue to block and end the layout watching thread.
+        self._finished_queue = Queue(1)
         # Spawn a thread that responds to system keyboard layout changes.
         if watch_layout:
             self._watcher = Thread(
@@ -132,18 +160,12 @@ class KeyboardLayout(object):
                 name="LayoutWatcher")
             self._watcher.start()
 
-        self._update_layout()
+        self.update_layout()
 
     def _layout_watcher(self):
-        layout = self
-
-        class LayoutWatchingCallback(AppKit.NSObject):
-            def layoutChanged_(self, event):
-                log.info('Mac keyboard layout changed, updating')
-                layout._update_layout()
-
         center = Foundation.NSDistributedNotificationCenter.defaultCenter()
         watcher_callback = LayoutWatchingCallback.new()
+        watcher_callback.setLayout_(self)
         center.addObserver_selector_name_object_suspensionBehavior_(
             watcher_callback,
             'layoutChanged:',
@@ -151,9 +173,20 @@ class KeyboardLayout(object):
             None,
             Foundation.NSNotificationSuspensionBehaviorDeliverImmediately
         )
-        AppHelper.runConsoleEventLoop(installInterrupt=True)
+        self._finished_queue.get()
+        center.removeObserver_name_object_(
+            watcher_callback,
+            'com.apple.Carbon.TISNotifySelectedKeyboardInputSourceChanged',
+            None
+        )
 
-    def _update_layout(self):
+    def cancel(self):
+        if self._watcher:
+            self._finished_queue.put(True)
+            self._watcher.join()
+            self._watcher = None
+
+    def update_layout(self):
         char_to_key_sequence, key_sequence_to_char, modifier_masks = KeyboardLayout._get_layout()
         self._char_to_key_sequence = char_to_key_sequence
         self._key_sequence_to_char = key_sequence_to_char

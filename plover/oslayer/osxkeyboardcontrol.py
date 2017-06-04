@@ -14,7 +14,6 @@ from Quartz import (
     CFRunLoopGetCurrent,
     CFRunLoopRun,
     CFRunLoopStop,
-kCGEventMaskForAllEvents,
     CFRelease,
     CGEventCreate,
     CGEventCreateKeyboardEvent,
@@ -33,12 +32,27 @@ kCGEventMaskForAllEvents,
     kCGEventFlagMaskAlternate,
     kCGEventFlagMaskCommand,
     kCGEventFlagMaskControl,
+    kCGEventSourceStateID,
     kCGEventFlagMaskNonCoalesced,
     kCGEventFlagMaskNumericPad,
     kCGEventFlagMaskSecondaryFn,
     kCGEventFlagMaskShift,
     kCGEventKeyDown,
     kCGEventKeyUp,
+    CGEventMaskBit,
+    kCGEventLeftMouseDown,
+    kCGEventLeftMouseUp,
+    kCGEventRightMouseDown,
+    kCGEventRightMouseUp,
+    kCGEventMouseMoved,
+    kCGEventRightMouseDragged,
+    kCGEventLeftMouseDragged,
+    kCGEventScrollWheel,
+    kCGEventTabletPointer,
+    kCGEventTabletProximity,
+    kCGEventOtherMouseDown,
+    kCGEventOtherMouseUp,
+    kCGEventOtherMouseDragged,
     kCGEventTapDisabledByTimeout,
     kCGEventTapOptionDefault,
     kCGHeadInsertEventTap,
@@ -55,6 +69,22 @@ from plover.oslayer.osxkeyboardlayout import KeyboardLayout
 from plover.key_combo import add_modifiers_aliases, KeyCombo, KEYNAME_TO_CHAR
 import plover.log
 
+
+MOUSE_EVENTS_MASK = (
+  CGEventMaskBit(kCGEventLeftMouseDown)
+  | CGEventMaskBit(kCGEventLeftMouseUp)
+  | CGEventMaskBit(kCGEventRightMouseDown)
+  | CGEventMaskBit(kCGEventRightMouseUp)
+  | CGEventMaskBit(kCGEventMouseMoved)
+  | CGEventMaskBit(kCGEventRightMouseDragged)
+  | CGEventMaskBit(kCGEventLeftMouseDragged)
+  | CGEventMaskBit(kCGEventScrollWheel)
+  | CGEventMaskBit(kCGEventTabletPointer)
+  | CGEventMaskBit(kCGEventTabletProximity)
+  | CGEventMaskBit(kCGEventOtherMouseDown)
+  | CGEventMaskBit(kCGEventOtherMouseUp)
+  | CGEventMaskBit(kCGEventOtherMouseDragged)
+)
 
 BACK_SPACE = 51
 
@@ -130,8 +160,8 @@ MODIFIER_KEYS_TO_MASKS = {
     # As of Sierra we *require* secondary fn to get control to work properly.
     59: kCGEventFlagMaskControl,
     62: kCGEventFlagMaskControl,
-    56: 131330,
-    60: 131330,
+    56: kCGEventFlagMaskShift,
+    60: kCGEventFlagMaskShift,
     55: kCGEventFlagMaskCommand,
     63: kCGEventFlagMaskSecondaryFn,
 }
@@ -220,38 +250,33 @@ class KeyboardCapture(threading.Thread):
             has_nonsupressible_modifiers = \
                 CGEventGetFlags(event) & ~suppressible_modifiers
 
+            # Ignore if a modifier is set.
             if self._suppress_keyboard:
                 pass
-            else:
-                # Ignore if a modifier is set.
-                if has_nonsupressible_modifiers:
-                    print('modifier: pass')
-                    CGEventSetFlags(event, kCGEventFlagMaskShift)
-                    return PASS_EVENT_THROUGH
+            elif has_nonsupressible_modifiers:
+                return PASS_EVENT_THROUGH
+
+            if CGEventGetIntegerValueField(event, kCGEventSourceStateID) == OUTPUT_SOURCE:
+                return PASS_EVENT_THROUGH
 
             if event_type in KeyboardCapture._KEYBOARD_EVENTS:
                 keycode = CGEventGetIntegerValueField(
                     event, kCGKeyboardEventKeycode)
-                print('keycode:', keycode, 'flags:', CGEventGetFlags(event))
                 key = KEYCODE_TO_KEY.get(keycode)
                 if key is None:
                     # Not a supported key, ignore...
-                    print('key is none: pass')
                     return PASS_EVENT_THROUGH
 
                 self._async_dispatch(key, event_type)
                 if key in self._grabbed_keys:
-                    print('grabbed: suppress')
                     return SUPPRESS_EVENT
-                print('else: pass')
-            CGEventSetFlags(event, kCGEventFlagMaskShift)
             return PASS_EVENT_THROUGH
 
         self._tap = CGEventTapCreate(
             kCGSessionEventTap,
             kCGHeadInsertEventTap,
             kCGEventTapOptionDefault,
-            kCGEventMaskForAllEvents,
+            CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp),
             callback, None)
         if self._tap is None:
             # Todo(hesky): See if there is a nice way to show the user what's
@@ -343,12 +368,70 @@ class KeyboardCapture(threading.Thread):
         if cls.machine_instance is not None:
             cls.machine_instance.suppress_keyboard(enable)
 
+
+class AddModifiersToMouseEvents(threading.Thread):
+    """Add specified modifiers to mouse events"""
+
+    def __init__(self, mask):
+        threading.Thread.__init__(self, name="MouseEventTapThread")
+        self._loop = None
+        self.mask = mask
+
+        def callback(proxy, event_type, event, reference):
+            # Don't pass on meta events meant for this event tap.
+            if event_type == kCGEventTapDisabledByTimeout:
+                # Re-enable the tap and hope we act faster next time
+                CGEventTapEnable(self._tap, True)
+                plover.log.warning(
+                    "Keystrokes may have been missed. "
+                    + "Keyboard event tap has been re-enabled. ")
+                return None
+
+            CGEventSetFlags(event, self.mask)
+            return event
+
+        self._tap = CGEventTapCreate(
+            kCGSessionEventTap,
+            kCGHeadInsertEventTap,
+            kCGEventTapOptionDefault,
+            MOUSE_EVENTS_MASK,
+            callback, None)
+        if self._tap is None:
+            # Todo(hesky): See if there is a nice way to show the user what's
+            # needed (or do it for them).
+            raise Exception("Enable access for assistive devices.")
+        CGEventTapEnable(self._tap, False)
+
+    def run(self):
+        source = CFMachPortCreateRunLoopSource(None, self._tap, 0)
+        self._loop = CFRunLoopGetCurrent()
+        print(self._loop)
+        CFRunLoopAddSource(
+            self._loop,
+            source,
+            kCFRunLoopCommonModes
+        )
+        CGEventTapEnable(self._tap, True)
+
+        CFRunLoopRun()
+
+        CFMachPortInvalidate(self._tap)
+        CFRelease(self._tap)
+        CFRunLoopSourceInvalidate(source)
+
+    def cancel(self):
+        CFRunLoopStop(self._loop)
+        self.join()
+        self._loop = None
+
+
 class KeyboardEmulation(object):
 
     RAW_PRESS, STRING_PRESS = range(2)
 
     def __init__(self):
         self._layout = KeyboardLayout()
+        self._modifier_adder = None
         self._mods_flags = 0 # Manage the held-down modifier flags.
 
         def name_to_code(name):
@@ -370,17 +453,18 @@ class KeyboardEmulation(object):
 
     def _release_key_combo(self):
         if self._key_combo:
-            self._send_sequence(self._key_combo.reset())
-            self._mods_flags = 0
             KeyboardCapture.suppress_machine(False)
+            if self._modifier_adder:
+                self._modifier_adder.cancel()
+                self._modifier_adder.join()
+                self._modifier_adder = None
+            self._send_sequence(self._key_combo.reset())
 
     def start(self):
         pass
 
     def cancel(self):
-        # FIXME: stop keyboard layout watcher.
-        pass
-
+        self._layout.cancel()
         self._release_key_combo()
 
     def send_backspaces(self, number_of_backspaces):
@@ -487,6 +571,7 @@ class KeyboardEmulation(object):
         else:
             self._release_key_combo()
         self._send_sequence(self._key_combo.parse(combo_string))
+        KeyboardCapture.suppress_machine(bool(self._key_combo))
 
     @staticmethod
     def _modifier_to_keycodes(modifier):
@@ -568,3 +653,15 @@ class KeyboardEmulation(object):
                     self._mods_flags &= ~kCGEventFlagMaskSecondaryFn
 
             CGEventPost(kCGSessionEventTap, event)
+        if self._mods_flags:
+            if self._modifier_adder and self._modifier_adder.mask != self._mods_flags:
+                self._modifier_adder.cancel()
+                self._modifier_adder.join()
+                self._modifier_adder = None
+            if not self._modifier_adder:
+                self._modifier_adder = AddModifiersToMouseEvents(self._mods_flags)
+                self._modifier_adder.start()
+        elif self._modifier_adder:
+            self._modifier_adder.cancel()
+            self._modifier_adder.join()
+            self._modifier_adder = None
