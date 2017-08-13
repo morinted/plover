@@ -181,9 +181,10 @@ class DictionaryItemModel(QAbstractTableModel):
         if not index.isValid():
             return Qt.NoItemFlags
         f = Qt.ItemIsEnabled | Qt.ItemIsSelectable
-        item = self._entries[index.row()]
-        if not item.dictionary.readonly:
-            f |= Qt.ItemIsEditable
+        if index.row() < len(self._entries):
+            item = self._entries[index.row()]
+            if not item.dictionary.readonly:
+                f |= Qt.ItemIsEditable
         return f
 
     def filter(self, strokes_filter=None, translation_filter=None):
