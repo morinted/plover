@@ -9,7 +9,7 @@
 "KPH-BG": "{#Super_L(c)}",
 "PHRO*F": "{PLOVER:SUSPEND}",
 "PHROLG": "{PLOVER:TOGGLE}",
-"PHROPB": "{PLOVER:RESUME}",
+"PHRO*PB": "{PLOVER:RESUME}",
 "PW*FP": "{#BackSpace}",
 "PW-FP": "{#BackSpace}",
 "R*R": "{#Return}{^}",
@@ -29,7 +29,6 @@
 "TA*BT": "{#Alt_L(Tab Tab)}",
 "TKUPT": "{PLOVER:ADD_TRANSLATION}",
 "TPEFBG": "{#Escape}",
-"TPHEPBT": "{#Return}",
 "TPW-G": "{#Alt_L(Right)}",
 "TPW-R": "{#Alt_L(Left)}"
 }
